@@ -1,0 +1,6 @@
+## Interface: 11200
+## Title: Shifty
+## Notes: Druid rotation and buff helper for Turtle WoW
+## Author: Skazz of Tel'Abin
+## Version: 0.1.0
+## SavedVariables: ShiftyDB
