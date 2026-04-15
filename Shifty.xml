@@ -8,6 +8,7 @@ xsi:schemaLocation="http://www.blizzard.com/wow/ui/ C:\Projects\WoW\Bin\Interfac
   
   <!-- My Script -->
   <Script file="ShiftyCore.lua"/>
+  <Script file="ShiftyBear.lua"/>
 
   <!-- My AddOn Frames -->
   <Frame name="ShiftyFrame" parent="UIParent">

@@ -1,6 +1,7 @@
 -- Shifty Cat module
 
 function SH_Cat_GetPredictedSpellName()
+	HS_EnsureSettings()
 	local energy = UnitMana("player") or 0
 	local comboPoints = HSGetComboPoints()
 	local stealthed = HSBuffChk("Ability_Ambush")
@@ -21,6 +22,7 @@ function SH_Cat_GetPredictedSpellName()
 	local clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
 	local builderSpell = "Claw"
 	local builderCost = clawCost
+	local targetIsBoss = UnitLevel('target') == -1
 	local fbthresh = 5
 	if HSMode == "aoe" then fbthresh = 4 end
 	if GetInventoryItemLink('player',18) ~= nil and string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity') then
@@ -28,12 +30,12 @@ function SH_Cat_GetPredictedSpellName()
 		clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
 		builderCost = clawCost
 	end
-	if (type(ShiftySettings) ~= "table" or type(ShiftySettings.cat) ~= "table" or ShiftySettings.cat.useShred == 1) and BehindTarget() == true and energy >= HS_SHRED_ENERGY_THRESHOLD and HSMode ~= "aoe" and FindActionSlot("Spell_Shadow_VampiricAura") ~= 0 then
+	if ShiftySettings.cat.useShred == 1 and (HSClawAdd ~= 1 or targetIsBoss) and BehindTarget() == true and energy >= HS_SHRED_ENERGY_THRESHOLD and HSMode ~= "aoe" and FindActionSlot("Spell_Shadow_VampiricAura") ~= 0 then
 		builderSpell = "Shred"
 		builderCost = shredCost
 	end
 
-	if HSTigerUse == 1 and stealthed == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and energy >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
+	if ShiftySettings.cat.useTiger == 1 and HSTigerUse == 1 and stealthed == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and energy >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
 		return "Tiger's Fury"
 	end
 	if (type(ShiftySettings) ~= "table" or type(ShiftySettings.cat) ~= "table" or ShiftySettings.cat.useRake == 1) and stealthed == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or energy >= rakeCost) then
@@ -68,7 +70,7 @@ end
 
 function SH_Cat_Run(tot, stealthed, romactive, romcooldown, partynum, lipcd, lipslot)
 	if stealthed == true then
-		if HSBuffChk('Ability_Mount_JungleTiger') == false then
+		if ShiftySettings.cat.useTiger == 1 and HSBuffChk('Ability_Mount_JungleTiger') == false then
 			HSCast("Tiger's Fury(Rank 4)")
 		end
 		if CheckInteractDistance('target',3) == 1 then
@@ -90,7 +92,7 @@ function SH_Cat_Run(tot, stealthed, romactive, romcooldown, partynum, lipcd, lip
 			end
 		else
 			if partynum > 2 then
-				if(not IsSpellOnCD("Cower")) and HSCowerUse == 1 then
+				if(not IsSpellOnCD("Cower")) and HSCowerUse == 1 and ShiftySettings.cat.useCower == 1 then
 					HSCast("Cower")
 				else
 					Atk("Auto",stealthed,romactive,romcooldown)

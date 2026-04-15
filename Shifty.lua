@@ -1,786 +1,549 @@
-local ADDON_NAME = "Shifty"
 
-Shifty = {}
-Shifty.frame = CreateFrame("Frame", "ShiftyFrame")
-Shifty.currentSuggestion = nil
-Shifty.playerClass = nil
-Shifty.currentForm = "None"
-
-local DEFAULTS = {
-    minimap = {
-        angle = 220,
-        hide = false,
-    },
-
-    general = {
-        enabled = true,
-        showSuggestionFrame = true,
-        lockSuggestionFrame = false,
-    },
-
-    autobuff = {
-        enabled = true,
-        markOfTheWild = true,
-        thorns = true,
-        omenOfClarity = false,
-    },
-
-    forms = {
-        None = {
-            enabled = true,
-            useRotation = true,
-        },
-        Bear = {
-            enabled = true,
-            useRotation = true,
-        },
-        Aquatic = {
-            enabled = true,
-            useRotation = true,
-        },
-        Cat = {
-            enabled = true,
-            useRotation = true,
-        },
-        Travel = {
-            enabled = true,
-            useRotation = true,
-        },
-        Tree = {
-            enabled = true,
-            useRotation = true,
-        },
-    },
+ShiftyMode = "single"
+ShiftyOverlayEnabled = 1
+ShiftyOverlayScale = 0.5
+ShiftyDebugEnabled = 1
+ShiftyDebugLog = {
+	[1] = "[19:15:37] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[2] = "[19:15:37] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[3] = "[19:15:37] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[4] = "[19:15:37] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[5] = "[19:15:37] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[6] = "[19:15:37] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[7] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[8] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[9] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[10] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[11] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[12] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[13] = "[19:15:38] SPELL_SELF_DAMAGE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 383.",
+	[14] = "[19:15:38] SPELL_SELF_BUFF E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 38.",
+	[15] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[16] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[17] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[18] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[19] = "[19:15:38] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[20] = "[19:15:38] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[21] = "[19:15:39] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[22] = "[19:15:39] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[23] = "[19:15:39] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[24] = "[19:15:39] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[25] = "[19:15:39] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[26] = "[19:15:39] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[27] = "[19:15:39] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[28] = "[19:15:39] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[29] = "[19:15:39] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[30] = "[19:15:39] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[31] = "[19:15:40] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[32] = "[19:15:40] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[33] = "[19:15:40] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[34] = "[19:15:40] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[35] = "[19:15:40] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[36] = "[19:15:40] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[37] = "[19:15:40] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[38] = "[19:15:40] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[39] = "[19:15:40] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[40] = "[19:15:40] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[41] = "[19:15:40] SPELL_SELF_DAMAGE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 387.",
+	[42] = "[19:15:40] SPELL_SELF_BUFF E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 38.",
+	[43] = "[19:15:40] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[44] = "[19:15:40] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[45] = "[19:15:41] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[46] = "[19:15:41] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[47] = "[19:15:41] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[48] = "[19:15:41] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[49] = "[19:15:41] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[50] = "[19:15:41] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[51] = "[19:15:41] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[52] = "[19:15:41] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[53] = "[19:15:41] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[54] = "[19:15:41] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[55] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[56] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[57] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[58] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[59] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[60] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[61] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[62] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[63] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[64] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[65] = "[19:15:42] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[66] = "[19:15:42] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[67] = "[19:15:43] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[68] = "[19:15:43] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[69] = "[19:15:43] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[70] = "[19:15:43] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[71] = "[19:15:43] SPELL_SELF_DAMAGE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 371.",
+	[72] = "[19:15:43] SPELL_SELF_BUFF E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 37.",
+	[73] = "[19:15:43] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[74] = "[19:15:43] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[75] = "[19:15:43] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[76] = "[19:15:43] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[77] = "[19:15:43] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[78] = "[19:15:43] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[79] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[80] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[81] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[82] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[83] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[84] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[85] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[86] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[87] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[88] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[89] = "[19:15:44] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[90] = "[19:15:44] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[91] = "[19:15:45] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[92] = "[19:15:45] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[93] = "[19:15:45] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[94] = "[19:15:45] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[95] = "[19:15:45] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[96] = "[19:15:45] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[97] = "[19:15:45] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[98] = "[19:15:45] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[99] = "[19:15:45] SPELL_SELF_DAMAGE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 354.",
+	[100] = "[19:15:45] SPELL_SELF_BUFF E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 36.",
+	[101] = "[19:15:45] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[102] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[103] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[104] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[105] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[106] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[107] = "[19:15:46] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[108] = "[19:15:47] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[109] = "[19:15:47] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[110] = "[19:15:47] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[111] = "[19:15:47] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[112] = "[19:15:47] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[113] = "[19:15:48] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[114] = "[19:15:48] SPELL_SELF_BUFF E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | You gain 5 Rage from Primal Fury.",
+	[115] = "[19:15:48] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[116] = "[19:15:48] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[117] = "[19:15:48] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[118] = "[19:15:48] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[119] = "[19:15:48] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[120] = "[19:15:48] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[121] = "[19:15:48] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[122] = "[19:15:48] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[123] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[124] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[125] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[126] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[127] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[128] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[129] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[130] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[131] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[132] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[133] = "[19:15:49] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[134] = "[19:15:49] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[135] = "[19:15:50] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[136] = "[19:15:50] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[137] = "[19:15:50] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[138] = "[19:15:50] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[139] = "[19:15:50] SPELL_SELF_DAMAGE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 358.",
+	[140] = "[19:15:50] SPELL_SELF_BUFF E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 36.",
+	[141] = "[19:15:50] BEAR_SINGLE E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[142] = "[19:15:50] CAST E=40 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[143] = "[19:15:50] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[144] = "[19:15:50] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[145] = "[19:15:50] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[146] = "[19:15:50] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[147] = "[19:15:51] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[148] = "[19:15:51] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[149] = "[19:15:51] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[150] = "[19:15:51] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[151] = "[19:15:51] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[152] = "[19:15:51] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[153] = "[19:15:51] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[154] = "[19:15:51] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[155] = "[19:15:51] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[156] = "[19:15:51] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[157] = "[19:15:52] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[158] = "[19:15:52] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[159] = "[19:15:52] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[160] = "[19:15:52] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[161] = "[19:15:52] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[162] = "[19:15:52] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[163] = "[19:15:52] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[164] = "[19:15:52] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[165] = "[19:15:52] BEAR_SINGLE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[166] = "[19:15:52] CAST E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[167] = "[19:15:52] SPELL_SELF_DAMAGE E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 369.",
+	[168] = "[19:15:52] SPELL_SELF_BUFF E=30 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 37.",
+	[169] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[170] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[171] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[172] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[173] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[174] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[175] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[176] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[177] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[178] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[179] = "[19:15:53] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[180] = "[19:15:53] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[181] = "[19:15:54] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[182] = "[19:15:54] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[183] = "[19:15:54] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[184] = "[19:15:54] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[185] = "[19:15:54] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[186] = "[19:15:54] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[187] = "[19:15:54] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[188] = "[19:15:54] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[189] = "[19:15:54] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[190] = "[19:15:54] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[191] = "[19:15:55] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[192] = "[19:15:55] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[193] = "[19:15:55] BEAR_SINGLE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[194] = "[19:15:55] CAST E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[195] = "[19:15:55] SPELL_SELF_DAMAGE E=20 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul is parried by Expert Training Dummy.",
+	[196] = "[19:15:55] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[197] = "[19:15:55] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[198] = "[19:15:55] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[199] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[200] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[201] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[202] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[203] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[204] = "[19:15:56] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[205] = "[19:15:57] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[206] = "[19:15:57] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[207] = "[19:15:57] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[208] = "[19:15:57] BEAR_SINGLE E=10 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[209] = "[19:15:57] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[210] = "[19:15:57] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[211] = "[19:15:58] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[212] = "[19:15:58] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[213] = "[19:15:58] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[214] = "[19:15:58] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[215] = "[19:15:58] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[216] = "[19:15:58] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[217] = "[19:15:58] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[218] = "[19:15:58] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[219] = "[19:15:58] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[220] = "[19:15:58] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[221] = "[19:15:59] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[222] = "[19:15:59] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[223] = "[19:15:59] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[224] = "[19:15:59] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[225] = "[19:15:59] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[226] = "[19:15:59] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[227] = "[19:15:59] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[228] = "[19:15:59] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[229] = "[19:15:59] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[230] = "[19:15:59] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[231] = "[19:16:00] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[232] = "[19:16:00] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[233] = "[19:16:00] SPELL_SELF_DAMAGE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul is parried by Expert Training Dummy.",
+	[234] = "[19:16:00] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[235] = "[19:16:00] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[236] = "[19:16:00] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[237] = "[19:16:00] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[238] = "[19:16:00] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[239] = "[19:16:00] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[240] = "[19:16:00] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[241] = "[19:16:00] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[242] = "[19:16:01] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[243] = "[19:16:01] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[244] = "[19:16:01] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[245] = "[19:16:01] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Demoralizing Roar",
+	[246] = "[19:16:01] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[247] = "[19:16:01] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Demoralizing Roar",
+	[248] = "[19:16:01] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[249] = "[19:16:02] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[250] = "[19:16:02] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[251] = "[19:16:02] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[252] = "[19:16:02] SPELL_SELF_DAMAGE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 367.",
+	[253] = "[19:16:02] SPELL_SELF_BUFF E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 37.",
+	[254] = "[19:16:02] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[255] = "[19:16:02] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[256] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[257] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[258] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[259] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[260] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[261] = "[19:16:03] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[262] = "[19:16:04] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[263] = "[19:16:04] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[264] = "[19:16:04] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[265] = "[19:16:04] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[266] = "[19:16:04] BEAR_SINGLE E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[267] = "[19:16:04] SPELL_SELF_BUFF E=1 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | You gain 5 Rage from Primal Fury.",
+	[268] = "[19:16:05] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[269] = "[19:16:05] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[270] = "[19:16:05] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[271] = "[19:16:05] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[272] = "[19:16:05] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[273] = "[19:16:05] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[274] = "[19:16:05] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[275] = "[19:16:05] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[276] = "[19:16:05] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[277] = "[19:16:05] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[278] = "[19:16:06] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[279] = "[19:16:06] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[280] = "[19:16:06] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[281] = "[19:16:06] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[282] = "[19:16:06] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[283] = "[19:16:06] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[284] = "[19:16:06] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[285] = "[19:16:06] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[286] = "[19:16:06] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[287] = "[19:16:06] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[288] = "[19:16:07] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[289] = "[19:16:07] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[290] = "[19:16:07] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[291] = "[19:16:07] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[292] = "[19:16:07] SPELL_SELF_DAMAGE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul crits Expert Training Dummy for 700.",
+	[293] = "[19:16:07] SPELL_SELF_BUFF E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 70.",
+	[294] = "[19:16:07] SPELL_SELF_BUFF E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | You gain 5 Rage from Primal Fury.",
+	[295] = "[19:16:07] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[296] = "[19:16:07] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[297] = "[19:16:07] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[298] = "[19:16:07] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[299] = "[19:16:07] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[300] = "[19:16:07] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[301] = "[19:16:08] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[302] = "[19:16:08] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[303] = "[19:16:08] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[304] = "[19:16:08] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[305] = "[19:16:08] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[306] = "[19:16:08] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[307] = "[19:16:08] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[308] = "[19:16:08] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[309] = "[19:16:08] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[310] = "[19:16:08] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[311] = "[19:16:09] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[312] = "[19:16:09] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[313] = "[19:16:09] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[314] = "[19:16:09] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[315] = "[19:16:09] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[316] = "[19:16:09] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[317] = "[19:16:09] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[318] = "[19:16:09] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[319] = "[19:16:09] SPELL_SELF_DAMAGE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul crits Expert Training Dummy for 681.",
+	[320] = "[19:16:09] SPELL_SELF_BUFF E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 68.",
+	[321] = "[19:16:09] SPELL_SELF_BUFF E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | You gain 5 Rage from Primal Fury.",
+	[322] = "[19:16:09] BEAR_SINGLE E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[323] = "[19:16:09] CAST E=26 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[324] = "[19:16:09] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[325] = "[19:16:09] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[326] = "[19:16:10] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[327] = "[19:16:10] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[328] = "[19:16:10] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[329] = "[19:16:10] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[330] = "[19:16:10] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[331] = "[19:16:10] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[332] = "[19:16:10] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[333] = "[19:16:10] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[334] = "[19:16:10] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[335] = "[19:16:10] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[336] = "[19:16:11] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[337] = "[19:16:11] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[338] = "[19:16:11] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[339] = "[19:16:11] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[340] = "[19:16:11] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[341] = "[19:16:11] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[342] = "[19:16:11] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[343] = "[19:16:11] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[344] = "[19:16:11] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[345] = "[19:16:11] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[346] = "[19:16:12] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[347] = "[19:16:12] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[348] = "[19:16:12] SPELL_SELF_DAMAGE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 374.",
+	[349] = "[19:16:12] SPELL_SELF_BUFF E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 37.",
+	[350] = "[19:16:12] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[351] = "[19:16:12] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[352] = "[19:16:12] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[353] = "[19:16:12] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[354] = "[19:16:13] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[355] = "[19:16:13] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[356] = "[19:16:13] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[357] = "[19:16:13] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[358] = "[19:16:13] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[359] = "[19:16:14] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[360] = "[19:16:14] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[361] = "[19:16:14] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[362] = "[19:16:14] SPELL_SELF_BUFF E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | You gain 5 Rage from Primal Fury.",
+	[363] = "[19:16:14] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[364] = "[19:16:14] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[365] = "[19:16:14] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[366] = "[19:16:15] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[367] = "[19:16:15] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[368] = "[19:16:15] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[369] = "[19:16:15] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[370] = "[19:16:15] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[371] = "[19:16:15] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[372] = "[19:16:15] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[373] = "[19:16:15] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[374] = "[19:16:15] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[375] = "[19:16:15] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[376] = "[19:16:16] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[377] = "[19:16:16] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[378] = "[19:16:16] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[379] = "[19:16:16] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[380] = "[19:16:16] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[381] = "[19:16:16] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[382] = "[19:16:16] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[383] = "[19:16:16] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[384] = "[19:16:16] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[385] = "[19:16:16] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[386] = "[19:16:16] SPELL_SELF_DAMAGE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 307. (36 blocked)",
+	[387] = "[19:16:16] SPELL_SELF_BUFF E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 31.",
+	[388] = "[19:16:17] BEAR_SINGLE E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[389] = "[19:16:17] CAST E=41 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[390] = "[19:16:17] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[391] = "[19:16:17] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[392] = "[19:16:17] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[393] = "[19:16:17] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[394] = "[19:16:17] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[395] = "[19:16:17] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[396] = "[19:16:17] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[397] = "[19:16:17] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[398] = "[19:16:18] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[399] = "[19:16:18] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[400] = "[19:16:18] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[401] = "[19:16:18] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[402] = "[19:16:18] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[403] = "[19:16:18] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[404] = "[19:16:18] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[405] = "[19:16:18] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[406] = "[19:16:18] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[407] = "[19:16:18] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[408] = "[19:16:19] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[409] = "[19:16:19] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[410] = "[19:16:19] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[411] = "[19:16:19] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[412] = "[19:16:19] BEAR_SINGLE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[413] = "[19:16:19] CAST E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[414] = "[19:16:19] SPELL_SELF_DAMAGE E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 353.",
+	[415] = "[19:16:19] SPELL_SELF_BUFF E=31 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 36.",
+	[416] = "[19:16:19] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[417] = "[19:16:19] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[418] = "[19:16:19] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[419] = "[19:16:19] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[420] = "[19:16:19] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[421] = "[19:16:19] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[422] = "[19:16:20] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[423] = "[19:16:20] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[424] = "[19:16:20] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[425] = "[19:16:20] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[426] = "[19:16:20] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[427] = "[19:16:20] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[428] = "[19:16:20] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[429] = "[19:16:20] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[430] = "[19:16:20] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[431] = "[19:16:20] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[432] = "[19:16:21] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[433] = "[19:16:21] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[434] = "[19:16:21] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[435] = "[19:16:21] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[436] = "[19:16:21] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[437] = "[19:16:21] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[438] = "[19:16:21] BEAR_SINGLE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[439] = "[19:16:21] CAST E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[440] = "[19:16:21] SPELL_SELF_DAMAGE E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 370.",
+	[441] = "[19:16:21] SPELL_SELF_BUFF E=21 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 37.",
+	[442] = "[19:16:21] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[443] = "[19:16:22] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[444] = "[19:16:22] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[445] = "[19:16:22] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[446] = "[19:16:22] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[447] = "[19:16:22] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[448] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[449] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[450] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[451] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[452] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[453] = "[19:16:23] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[454] = "[19:16:24] BEAR_SINGLE E=11 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[455] = "[19:16:24] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[456] = "[19:16:24] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[457] = "[19:16:24] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[458] = "[19:16:24] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[459] = "[19:16:24] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[460] = "[19:16:24] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[461] = "[19:16:24] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[462] = "[19:16:24] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[463] = "[19:16:25] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[464] = "[19:16:25] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[465] = "[19:16:25] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[466] = "[19:16:25] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[467] = "[19:16:25] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[468] = "[19:16:25] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[469] = "[19:16:25] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[470] = "[19:16:25] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[471] = "[19:16:25] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[472] = "[19:16:25] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[473] = "[19:16:26] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[474] = "[19:16:26] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[475] = "[19:16:26] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[476] = "[19:16:26] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[477] = "[19:16:26] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[478] = "[19:16:26] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[479] = "[19:16:26] SPELL_SELF_DAMAGE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 389.",
+	[480] = "[19:16:26] SPELL_SELF_BUFF E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 39.",
+	[481] = "[19:16:26] BEAR_SINGLE E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[482] = "[19:16:26] CAST E=23 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Maul (bear single)",
+	[483] = "[19:16:26] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[484] = "[19:16:27] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[485] = "[19:16:27] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[486] = "[19:16:27] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[487] = "[19:16:27] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[488] = "[19:16:27] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[489] = "[19:16:28] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[490] = "[19:16:28] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[491] = "[19:16:28] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[492] = "[19:16:28] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[493] = "[19:16:28] BEAR_SINGLE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[494] = "[19:16:29] SPELL_SELF_DAMAGE E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Maul hits Expert Training Dummy for 380.",
+	[495] = "[19:16:29] SPELL_SELF_BUFF E=13 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy | Your Carnage heals you for 38.",
+	[496] = "[19:16:29] BEAR_SINGLE E=3 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[497] = "[19:16:29] BEAR_SINGLE E=3 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[498] = "[19:16:29] BEAR_SINGLE E=3 CP=0 B=1 Rip=0 Rake=0 doclaw=0 T=Expert Training Dummy",
+	[499] = "[19:16:33] TARGET_CHANGED E=13 CP=0 B=0 Rip=0 Rake=0 doclaw=0 T=none",
+	[500] = "[19:16:45] COMBAT_END E=13 CP=0 B=0 Rip=0 Rake=0 doclaw=0 T=none",
+	["_overlay"] = {
+		["y"] = 160,
+		["x"] = 0,
+		["point"] = "CENTER",
+		["relativePoint"] = "CENTER",
+		["locked"] = 0,
+		["debug_quiet"] = 1,
+	},
+	["_minimap"] = {
+		["angle"] = 225,
+		["hide"] = 0,
+	},
+	["_persist_enabled"] = 1,
+	["session"] = {
+	},
+	["_persist"] = {
+		[1] = "[19:14:50] |BAL| strict_state phase=fish_arcane moonfire=0 insect=0 wcnt=0 scnt=0",
+		[2] = "[19:14:53] |BAL| spell_self_buff=You gain 10 Rage from Furor.",
+		[3] = "[19:15:33] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[4] = "[19:15:36] |BAL| spell_self_buff=Your Carnage heals you for 76.",
+		[5] = "[19:15:36] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[6] = "[19:15:38] |BAL| spell_self_buff=Your Carnage heals you for 38.",
+		[7] = "[19:15:40] |BAL| spell_self_buff=Your Carnage heals you for 38.",
+		[8] = "[19:15:43] |BAL| spell_self_buff=Your Carnage heals you for 37.",
+		[9] = "[19:15:45] |BAL| spell_self_buff=Your Carnage heals you for 36.",
+		[10] = "[19:15:48] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[11] = "[19:15:50] |BAL| spell_self_buff=Your Carnage heals you for 36.",
+		[12] = "[19:15:52] |BAL| spell_self_buff=Your Carnage heals you for 37.",
+		[13] = "[19:16:02] |BAL| spell_self_buff=Your Carnage heals you for 37.",
+		[14] = "[19:16:04] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[15] = "[19:16:07] |BAL| spell_self_buff=Your Carnage heals you for 70.",
+		[16] = "[19:16:07] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[17] = "[19:16:09] |BAL| spell_self_buff=Your Carnage heals you for 68.",
+		[18] = "[19:16:09] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[19] = "[19:16:12] |BAL| spell_self_buff=Your Carnage heals you for 37.",
+		[20] = "[19:16:14] |BAL| spell_self_buff=You gain 5 Rage from Primal Fury.",
+		[21] = "[19:16:16] |BAL| spell_self_buff=Your Carnage heals you for 31.",
+		[22] = "[19:16:19] |BAL| spell_self_buff=Your Carnage heals you for 36.",
+		[23] = "[19:16:21] |BAL| spell_self_buff=Your Carnage heals you for 37.",
+		[24] = "[19:16:26] |BAL| spell_self_buff=Your Carnage heals you for 39.",
+		[25] = "[19:16:29] |BAL| spell_self_buff=Your Carnage heals you for 38.",
+	},
 }
-
-local FORM_TEXTURES = {
-    Bear = {
-        "Ability_Racial_BearForm",
-        "Ability_Druid_DireBearForm",
-    },
-    Aquatic = {
-        "Ability_Druid_AquaticForm",
-    },
-    Cat = {
-        "Ability_Druid_CatForm",
-    },
-    Travel = {
-        "Ability_Druid_TravelForm",
-    },
-    Tree = {
-        "Ability_Druid_TreeofLife",
-    },
-}
-
-local PLAYER_BUFFS = {
-    MarkOfTheWild = {
-        texture = "Spell_Nature_Regeneration",
-        spell = "Mark of the Wild",
-    },
-    Thorns = {
-        texture = "Spell_Nature_Thorns",
-        spell = "Thorns",
-    },
-    OmenOfClarity = {
-        texture = "Spell_Nature_CrystalBall",
-        spell = "Omen of Clarity",
-    },
-}
-
-local function Shifty_DeepCopyDefaults(src, dst)
-    if type(src) ~= "table" then return src end
-    if type(dst) ~= "table" then dst = {} end
-
-    for k, v in pairs(src) do
-        if type(v) == "table" then
-            dst[k] = Shifty_DeepCopyDefaults(v, dst[k])
-        elseif dst[k] == nil then
-            dst[k] = v
-        end
-    end
-
-    return dst
-end
-
-local function Shifty_Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff7fdfffShifty:|r " .. msg)
-end
-
-local function Shifty_IsPlayerDruid()
-    local _, class = UnitClass("player")
-    return class == "DRUID"
-end
-
-local function Shifty_HasBuffTexture(unit, textureFragment)
-    local i = 1
-    while true do
-        local texture = UnitBuff(unit, i)
-        if not texture then
-            break
-        end
-
-        if string.find(string.lower(texture), string.lower(textureFragment), 1, true) then
-            return true
-        end
-        i = i + 1
-    end
-    return false
-end
-
-local function Shifty_GetCurrentForm()
-    local i = 1
-    while true do
-        local texture = UnitBuff("player", i)
-        if not texture then
-            break
-        end
-
-        for formName, textureList in pairs(FORM_TEXTURES) do
-            local j
-            for j = 1, table.getn(textureList) do
-                if string.find(string.lower(texture), string.lower(textureList[j]), 1, true) then
-                    return formName
-                end
-            end
-        end
-
-        i = i + 1
-    end
-
-    return "None"
-end
-
-local function Shifty_IsSpellReady(spellName)
-    local i = 1
-    while true do
-        local spell = GetSpellName(i, BOOKTYPE_SPELL)
-        if not spell then break end
-
-        if spell == spellName then
-            local start, duration, enabled = GetSpellCooldown(i, BOOKTYPE_SPELL)
-            if enabled == 1 and (start == 0 or duration == 0) then
-                return true
-            end
-            return false
-        end
-
-        i = i + 1
-    end
-    return false
-end
-
-local function Shifty_KnowsSpell(spellName)
-    local i = 1
-    while true do
-        local spell = GetSpellName(i, BOOKTYPE_SPELL)
-        if not spell then break end
-        if spell == spellName then
-            return true
-        end
-        i = i + 1
-    end
-    return false
-end
-
-local function Shifty_GetBuffSuggestion()
-    if not ShiftyDB.autobuff.enabled then
-        return nil
-    end
-
-    if ShiftyDB.autobuff.markOfTheWild then
-        if Shifty_KnowsSpell(PLAYER_BUFFS.MarkOfTheWild.spell)
-           and not Shifty_HasBuffTexture("player", PLAYER_BUFFS.MarkOfTheWild.texture) then
-            return PLAYER_BUFFS.MarkOfTheWild.spell
-        end
-    end
-
-    if ShiftyDB.autobuff.thorns then
-        if Shifty_KnowsSpell(PLAYER_BUFFS.Thorns.spell)
-           and not Shifty_HasBuffTexture("player", PLAYER_BUFFS.Thorns.texture) then
-            return PLAYER_BUFFS.Thorns.spell
-        end
-    end
-
-    if ShiftyDB.autobuff.omenOfClarity then
-        if Shifty_KnowsSpell(PLAYER_BUFFS.OmenOfClarity.spell)
-           and not Shifty_HasBuffTexture("player", PLAYER_BUFFS.OmenOfClarity.texture) then
-            return PLAYER_BUFFS.OmenOfClarity.spell
-        end
-    end
-
-    return nil
-end
-
-local function Shifty_UnitHasDebuffTexture(unit, textureFragment)
-    local i = 1
-    while true do
-        local texture = UnitDebuff(unit, i)
-        if not texture then
-            break
-        end
-
-        if string.find(string.lower(texture), string.lower(textureFragment), 1, true) then
-            return true
-        end
-
-        i = i + 1
-    end
-    return false
-end
-
-local function Shifty_GetComboPoints()
-    if GetComboPoints then
-        return GetComboPoints()
-    end
-    return 0
-end
-
-local function Shifty_SuggestCat()
-    if not UnitExists("target") or UnitIsDead("target") or UnitCanAttack("player", "target") ~= 1 then
-        return "Choose target"
-    end
-
-    if not Shifty_UnitHasDebuffTexture("target", "Ability_Druid_Disembowel") then
-        if Shifty_KnowsSpell("Rake") then
-            return "Rake"
-        end
-    end
-
-    if Shifty_GetComboPoints() >= 5 then
-        if Shifty_KnowsSpell("Rip") then
-            return "Rip"
-        end
-        if Shifty_KnowsSpell("Ferocious Bite") then
-            return "Ferocious Bite"
-        end
-    end
-
-    if Shifty_KnowsSpell("Claw") then
-        return "Claw"
-    end
-
-    return "Attack"
-end
-
-local function Shifty_SuggestBear()
-    if not UnitExists("target") or UnitIsDead("target") or UnitCanAttack("player", "target") ~= 1 then
-        return "Choose target"
-    end
-
-    if not Shifty_UnitHasDebuffTexture("target", "Ability_Physical_Taunt") then
-        if Shifty_KnowsSpell("Demoralizing Roar") then
-            return "Demoralizing Roar"
-        end
-    end
-
-    if Shifty_KnowsSpell("Maul") then
-        return "Maul"
-    end
-
-    return "Attack"
-end
-
-local function Shifty_SuggestNone()
-    local buffSuggestion = Shifty_GetBuffSuggestion()
-    if buffSuggestion then
-        return buffSuggestion
-    end
-
-    if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-        if Shifty_KnowsSpell("Moonfire") and not Shifty_UnitHasDebuffTexture("target", "Spell_Nature_StarFall") then
-            return "Moonfire"
-        end
-        if Shifty_KnowsSpell("Wrath") then
-            return "Wrath"
-        end
-    end
-
-    return "Ready"
-end
-
-local function Shifty_SuggestTravel()
-    local buffSuggestion = Shifty_GetBuffSuggestion()
-    if buffSuggestion then
-        return buffSuggestion
-    end
-    return "Travel active"
-end
-
-local function Shifty_SuggestAquatic()
-    local buffSuggestion = Shifty_GetBuffSuggestion()
-    if buffSuggestion then
-        return buffSuggestion
-    end
-    return "Aquatic active"
-end
-
-local function Shifty_SuggestTree()
-    local buffSuggestion = Shifty_GetBuffSuggestion()
-    if buffSuggestion then
-        return buffSuggestion
-    end
-
-    if UnitExists("target") and UnitIsFriend("player", "target") == 1 and not UnitIsDead("target") then
-        if Shifty_KnowsSpell("Rejuvenation") then
-            return "Rejuvenation"
-        end
-        if Shifty_KnowsSpell("Regrowth") then
-            return "Regrowth"
-        end
-        if Shifty_KnowsSpell("Healing Touch") then
-            return "Healing Touch"
-        end
-    end
-
-    return "Tree active"
-end
-
-local function Shifty_GetRotationSuggestion()
-    if not ShiftyDB.general.enabled then
-        return nil
-    end
-
-    local buffSuggestion = Shifty_GetBuffSuggestion()
-    if buffSuggestion then
-        return buffSuggestion
-    end
-
-    local form = Shifty_GetCurrentForm()
-    Shifty.currentForm = form
-
-    if not ShiftyDB.forms[form] or not ShiftyDB.forms[form].enabled or not ShiftyDB.forms[form].useRotation then
-        return nil
-    end
-
-    if form == "Cat" then
-        return Shifty_SuggestCat()
-    elseif form == "Bear" then
-        return Shifty_SuggestBear()
-    elseif form == "Aquatic" then
-        return Shifty_SuggestAquatic()
-    elseif form == "Travel" then
-        return Shifty_SuggestTravel()
-    elseif form == "Tree" then
-        return Shifty_SuggestTree()
-    else
-        return Shifty_SuggestNone()
-    end
-end
-
-local function Shifty_CreateSuggestionFrame()
-    local f = CreateFrame("Frame", "ShiftySuggestionFrame", UIParent)
-    f:SetWidth(170)
-    f:SetHeight(54)
-    f:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
-    f:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileSize = 16,
-        edgeSize = 16,
-        insets = { left = 4, right = 4, top = 4, bottom = 4 }
-    })
-    f:SetBackdropColor(0, 0, 0, 0.85)
-    f:EnableMouse(true)
-    f:SetMovable(true)
-    f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart", function()
-        if not ShiftyDB.general.lockSuggestionFrame then
-            this:StartMoving()
-        end
-    end)
-    f:SetScript("OnDragStop", function()
-        this:StopMovingOrSizing()
-    end)
-
-    f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.title:SetPoint("TOP", f, "TOP", 0, -8)
-    f.title:SetText("Shifty")
-
-    f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    f.text:SetPoint("CENTER", f, "CENTER", 0, -4)
-    f.text:SetText("Ready")
-
-    Shifty.suggestionFrame = f
-end
-
-local function Shifty_UpdateSuggestionFrame()
-    if not Shifty.suggestionFrame then return end
-
-    if not ShiftyDB.general.showSuggestionFrame then
-        Shifty.suggestionFrame:Hide()
-        return
-    end
-
-    Shifty.suggestionFrame:Show()
-
-    local suggestion = Shifty_GetRotationSuggestion()
-    if not suggestion then
-        suggestion = "Disabled"
-    end
-
-    Shifty.currentSuggestion = suggestion
-    Shifty.suggestionFrame.text:SetText(suggestion)
-end
-
-local function Shifty_CreateMainPanel()
-    local panel = CreateFrame("Frame", "ShiftyOptionsPanel", UIParent)
-    panel:SetWidth(520)
-    panel:SetHeight(420)
-    panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    panel:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true,
-        tileSize = 32,
-        edgeSize = 32,
-        insets = { left = 11, right = 12, top = 12, bottom = 11 }
-    })
-    panel:Hide()
-
-    panel.title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    panel.title:SetPoint("TOP", panel, "TOP", 0, -16)
-    panel.title:SetText("Shifty")
-
-    panel.subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    panel.subtitle:SetPoint("TOP", panel.title, "BOTTOM", 0, -4)
-    panel.subtitle:SetText("Druid rotation and buff helper")
-
-    panel.credits = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    panel.credits:SetPoint("BOTTOM", panel, "BOTTOM", 0, 16)
-    panel.credits:SetText("Credits to Skazz of Tel'Abin")
-
-    local close = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -6, -6)
-
-    Shifty.optionsPanel = panel
-end
-
-local function Shifty_CreateCheckbox(parent, label, x, y, checkedFunc, setFunc)
-    local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-    cb:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    getglobal(cb:GetName() .. "Text"):SetText(label)
-
-    cb:SetScript("OnShow", function()
-        this:SetChecked(checkedFunc())
-    end)
-
-    cb:SetScript("OnClick", function()
-        setFunc(this:GetChecked() == 1)
-        Shifty_UpdateSuggestionFrame()
-    end)
-
-    return cb
-end
-
-local function Shifty_SelectTab(tabName)
-    local i
-    for i = 1, table.getn(Shifty.tabs) do
-        local tab = Shifty.tabs[i]
-        if tab.name == tabName then
-            tab.button:LockHighlight()
-            tab.content:Show()
-        else
-            tab.button:UnlockHighlight()
-            tab.content:Hide()
-        end
-    end
-end
-
-local function Shifty_CreateTab(parent, name, index)
-    local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    button:SetWidth(70)
-    button:SetHeight(22)
-    button:SetPoint("TOPLEFT", parent, "TOPLEFT", 18 + ((index - 1) * 78), -54)
-    button:SetText(name)
-
-    local content = CreateFrame("Frame", nil, parent)
-    content:SetWidth(480)
-    content:SetHeight(250)
-    content:SetPoint("TOPLEFT", parent, "TOPLEFT", 20, -90)
-    content:Hide()
-
-    local tab = {
-        name = name,
-        button = button,
-        content = content,
-    }
-
-    button:SetScript("OnClick", function()
-        Shifty_SelectTab(name)
-    end)
-
-    return tab
-end
-
-local function Shifty_CreateTabs()
-    Shifty.tabs = {}
-
-    local names = { "Bear", "Aquatic", "Cat", "Travel", "Tree", "None" }
-    local i
-
-    for i = 1, table.getn(names) do
-        local tab = Shifty_CreateTab(Shifty.optionsPanel, names[i], i)
-        table.insert(Shifty.tabs, tab)
-
-        tab.header = tab.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        tab.header:SetPoint("TOPLEFT", tab.content, "TOPLEFT", 6, -6)
-        tab.header:SetText(names[i] .. " Settings")
-
-        Shifty_CreateCheckbox(
-            tab.content,
-            "Enable " .. names[i] .. " helper",
-            8,
-            -28,
-            function() return ShiftyDB.forms[names[i]].enabled end,
-            function(v) ShiftyDB.forms[names[i]].enabled = v end
-        )
-
-        Shifty_CreateCheckbox(
-            tab.content,
-            "Enable rotation suggestions",
-            8,
-            -54,
-            function() return ShiftyDB.forms[names[i]].useRotation end,
-            function(v) ShiftyDB.forms[names[i]].useRotation = v end
-        )
-
-        local note = tab.content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        note:SetPoint("TOPLEFT", tab.content, "TOPLEFT", 10, -88)
-        note:SetWidth(440)
-        note:SetJustifyH("LEFT")
-
-        if names[i] == "Cat" then
-            note:SetText("Starter priority: Rake > build combo points > Rip/Ferocious Bite.")
-        elseif names[i] == "Bear" then
-            note:SetText("Starter priority: Demoralizing Roar if missing, then Maul.")
-        elseif names[i] == "Tree" then
-            note:SetText("Starter priority: Rejuvenation / Regrowth / Healing Touch. Tree form support is included as a configurable section.")
-        elseif names[i] == "None" then
-            note:SetText("Caster priority: missing buffs first, then Moonfire / Wrath.")
-        else
-            note:SetText("This form currently uses lightweight helper logic and can be expanded later.")
-        end
-    end
-
-    Shifty_SelectTab("Cat")
-end
-
-local function Shifty_CreateAutobuffSection()
-    local panel = Shifty.optionsPanel
-
-    local header = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    header:SetPoint("TOPLEFT", panel, "TOPLEFT", 20, -350)
-    header:SetText("Autobuff")
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Enable autobuff suggestions",
-        20,
-        -368,
-        function() return ShiftyDB.autobuff.enabled end,
-        function(v) ShiftyDB.autobuff.enabled = v end
-    )
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Mark of the Wild",
-        200,
-        -368,
-        function() return ShiftyDB.autobuff.markOfTheWild end,
-        function(v) ShiftyDB.autobuff.markOfTheWild = v end
-    )
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Thorns",
-        340,
-        -368,
-        function() return ShiftyDB.autobuff.thorns end,
-        function(v) ShiftyDB.autobuff.thorns = v end
-    )
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Omen of Clarity",
-        20,
-        -394,
-        function() return ShiftyDB.autobuff.omenOfClarity end,
-        function(v) ShiftyDB.autobuff.omenOfClarity = v end
-    )
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Show suggestion frame",
-        200,
-        -394,
-        function() return ShiftyDB.general.showSuggestionFrame end,
-        function(v) ShiftyDB.general.showSuggestionFrame = v end
-    )
-
-    Shifty_CreateCheckbox(
-        panel,
-        "Lock suggestion frame",
-        340,
-        -394,
-        function() return ShiftyDB.general.lockSuggestionFrame end,
-        function(v) ShiftyDB.general.lockSuggestionFrame = v end
-    )
-end
-
-local function Shifty_UpdateMinimapButtonPosition()
-    if not Shifty.minimapButton then return end
-
-    local angle = ShiftyDB.minimap.angle or 220
-    local radius = 78
-    local x = math.cos(angle) * radius
-    local y = math.sin(angle) * radius
-
-    Shifty.minimapButton:ClearAllPoints()
-    Shifty.minimapButton:SetPoint("CENTER", Minimap, "CENTER", x, y)
-
-    if ShiftyDB.minimap.hide then
-        Shifty.minimapButton:Hide()
-    else
-        Shifty.minimapButton:Show()
-    end
-end
-
-local function Shifty_CreateMinimapButton()
-    local button = CreateFrame("Button", "ShiftyMinimapButton", Minimap)
-    button:SetWidth(32)
-    button:SetHeight(32)
-    button:SetFrameStrata("MEDIUM")
-    button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-
-    button:SetNormalTexture("Interface\\Icons\\Ability_Druid_CatForm")
-    button:SetPushedTexture("Interface\\Icons\\Ability_Druid_Bash")
-    button:SetPoint("TOPLEFT", Minimap, "TOPLEFT")
-
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    button:RegisterForDrag("LeftButton")
-    button:SetMovable(true)
-    button:EnableMouse(true)
-
-    button:SetScript("OnClick", function()
-        if arg1 == "LeftButton" or arg1 == "RightButton" then
-            if Shifty.optionsPanel:IsShown() then
-                Shifty.optionsPanel:Hide()
-            else
-                Shifty.optionsPanel:Show()
-            end
-        end
-    end)
-
-    button:SetScript("OnDragStart", function()
-        this.dragging = true
-    end)
-
-    button:SetScript("OnDragStop", function()
-        this.dragging = false
-    end)
-
-    button:SetScript("OnUpdate", function()
-        if this.dragging then
-            local mx, my = GetCursorPosition()
-            local scale = Minimap:GetEffectiveScale()
-            mx = mx / scale
-            my = my / scale
-
-            local cx, cy = Minimap:GetCenter()
-            local dx = mx - cx
-            local dy = my - cy
-            local angle = math.atan2(dy, dx)
-
-            ShiftyDB.minimap.angle = angle
-            Shifty_UpdateMinimapButtonPosition()
-        end
-    end)
-
-    button:SetScript("OnEnter", function()
-        GameTooltip:SetOwner(this, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Shifty")
-        GameTooltip:AddLine("Left/Right Click: Open Settings", 1, 1, 1)
-        GameTooltip:AddLine("Drag: Move around minimap", 0.8, 0.8, 0.8)
-        GameTooltip:Show()
-    end)
-
-    button:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-
-    Shifty.minimapButton = button
-    Shifty_UpdateMinimapButtonPosition()
-end
-
-local function Shifty_CreateUI()
-    Shifty_CreateSuggestionFrame()
-    Shifty_CreateMainPanel()
-    Shifty_CreateTabs()
-    Shifty_CreateAutobuffSection()
-    Shifty_CreateMinimapButton()
-end
-
-local function Shifty_Toggle()
-    ShiftyDB.general.enabled = not ShiftyDB.general.enabled
-    if ShiftyDB.general.enabled then
-        Shifty_Print("Enabled")
-    else
-        Shifty_Print("Disabled")
-    end
-    Shifty_UpdateSuggestionFrame()
-end
-
-SLASH_SHIFTY1 = "/shifty"
-SlashCmdList["SHIFTY"] = function(msg)
-    msg = string.lower(msg or "")
-
-    if msg == "toggle" then
-        Shifty_Toggle()
-    elseif msg == "show" then
-        Shifty.optionsPanel:Show()
-    elseif msg == "hide" then
-        Shifty.optionsPanel:Hide()
-    elseif msg == "minimap" then
-        ShiftyDB.minimap.hide = not ShiftyDB.minimap.hide
-        Shifty_UpdateMinimapButtonPosition()
-    else
-        Shifty_Print("/shifty toggle - enable/disable helper")
-        Shifty_Print("/shifty show - open settings")
-        Shifty_Print("/shifty hide - close settings")
-        Shifty_Print("/shifty minimap - show/hide minimap button")
-    end
-end
-
-Shifty.frame:SetScript("OnEvent", function()
-    if event == "VARIABLES_LOADED" then
-        if not Shifty_IsPlayerDruid() then
-            return
-        end
-
-        ShiftyDB = Shifty_DeepCopyDefaults(DEFAULTS, ShiftyDB or {})
-        Shifty_CreateUI()
-        Shifty_UpdateSuggestionFrame()
-        Shifty_Print("Loaded. Credits to Skazz of Tel'Abin.")
-    elseif event == "PLAYER_ENTERING_WORLD"
-        or event == "PLAYER_AURAS_CHANGED"
-        or event == "PLAYER_TARGET_CHANGED"
-        or event == "ACTIONBAR_UPDATE_USABLE"
-        or event == "ACTIONBAR_UPDATE_COOLDOWN"
-        or event == "SPELLS_CHANGED" then
-
-        if not Shifty_IsPlayerDruid() then
-            return
-        end
-
-        Shifty_UpdateSuggestionFrame()
-    end
-end)
-
-Shifty.frame:RegisterEvent("VARIABLES_LOADED")
-Shifty.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-Shifty.frame:RegisterEvent("PLAYER_AURAS_CHANGED")
-Shifty.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-Shifty.frame:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
-Shifty.frame:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
-Shifty.frame:RegisterEvent("SPELLS_CHANGED")

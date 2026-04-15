@@ -195,7 +195,7 @@ function HSBalanceClientReadyToIssue()
 	end
 
 	-- very short settle window after issuing any spell
-	if hsBalanceLastIssuedCastAt ~= nil and (now - hsBalanceLastIssuedCastAt) < 0.30 then
+	if hsBalanceLastIssuedCastAt ~= nil and (now - hsBalanceLastIssuedCastAt) < 0.34 then
 		return false
 	end
 
@@ -283,7 +283,7 @@ function HSBalanceExecutionAllowsSpell(spellName, phase)
 	if phase == "arcane_eclipse" then
 		return spellName == "Starfire"
 	elseif phase == "nature_eclipse" then
-		return spellName == "Wrath"
+		return spellName == "Wrath" or spellName == "Moonfire" or spellName == "Insect Swarm"
 	elseif phase == "fish_arcane" then
 		if spellName == "Insect Swarm" then
 			return hsBalanceOpenedWithInsectSwarm ~= true
@@ -559,10 +559,12 @@ function HS_GetBalancePredictedSpellName()
 	end
 
 	if phase == "snapshot" then
-		if moonfireUp ~= true and HS_HasRecentCastLock("Moonfire") ~= true and HSBalanceCanCast("Moonfire") and canCastOnTarget then
-			predicted = "Moonfire"
-		elseif insectUp ~= true and HS_HasRecentCastLock("Insect Swarm") ~= true and HSBalanceCanCast("Insect Swarm") and canCastOnTarget then
+		if insectUp ~= true and HS_HasRecentCastLock("Insect Swarm") ~= true and HSBalanceCanCast("Insect Swarm") and canCastOnTarget then
+			HSBalanceLog("refresh_is=snapshot_missing")
 			predicted = "Insect Swarm"
+		elseif moonfireUp ~= true and HS_HasRecentCastLock("Moonfire") ~= true and HSBalanceCanCast("Moonfire") and canCastOnTarget then
+			HSBalanceLog("refresh_mf=snapshot_missing")
+			predicted = "Moonfire"
 		else
 			hsBalanceLoopWrathCount = 0
 			hsBalanceLoopStarfireCount = 0
@@ -578,7 +580,13 @@ function HS_GetBalancePredictedSpellName()
 			return nil
 		end
 	elseif predicted == nil and phase == "nature_eclipse" then
-		if HSBalanceCanCast("Wrath") and canCastOnTarget then
+		if insectUp ~= true and HS_HasRecentCastLock("Insect Swarm") ~= true and HSBalanceCanCast("Insect Swarm") and canCastOnTarget then
+			HSBalanceLog("refresh_is=nature_missing")
+			predicted = "Insect Swarm"
+		elseif moonfireUp ~= true and HS_HasRecentCastLock("Moonfire") ~= true and HSBalanceCanCast("Moonfire") and canCastOnTarget then
+			HSBalanceLog("refresh_mf=nature_missing")
+			predicted = "Moonfire"
+		elseif HSBalanceCanCast("Wrath") and canCastOnTarget then
 			predicted = "Wrath"
 		else
 			return nil

@@ -3,6 +3,8 @@
 ## Notes: Druid rotation and buff helper for Turtle WoW
 ## Author: Skazz of Tel'Abin
 ## Version: 1.0.0
-## SavedVariables: ShiftyMode,ShiftyOverlayEnabled,ShiftyOverlayScale,ShiftyDebugEnabled,ShiftyDebugLog
+## SavedVariables: ShiftyMode,ShiftyOverlayEnabled,ShiftyOverlayScale,ShiftyDebugEnabled,ShiftyDebugLog,ShiftySettings,HSAutoFF,HSBearUseDemo,HSBearUseMaul,HSBearUseSavageBite,HSBearUseOOCShift,HSTigerUse,HSShiftUse,HSCowerUse,HSClawAdd,ShiftyRestockSettings,ShiftyBuffSettings
 
 Shifty.xml
+ShiftyRestock.lua
+ShiftyBuff.lua

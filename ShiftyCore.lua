@@ -66,6 +66,67 @@ hsOverlayLastAnnounced = ""
 hsOverlayLastPredicted = nil
 HS_LOG_MAX_LINES = 800
 
+HSBearExec = HSBearExec or {}
+HSBearExec.lastMaulQueueAt = HSBearExec.lastMaulQueueAt or 0
+HSBearExec.lastDemoAt = HSBearExec.lastDemoAt or 0
+HSBearExec.lastFFAt = HSBearExec.lastFFAt or 0
+HSBearExec.lastSavageBiteAt = HSBearExec.lastSavageBiteAt or 0
+
+if type(ShiftyRestockSettings) ~= "table" then ShiftyRestockSettings = {} end
+if type(ShiftyRestockSettings.reagents) ~= "table" then ShiftyRestockSettings.reagents = {} end
+local restockDefaults = {
+	["Maple Seed"] = { enabled = 0, quantity = 10 },
+	["Stranglethorn Seed"] = { enabled = 0, quantity = 10 },
+	["Ashwood Seed"] = { enabled = 0, quantity = 10 },
+	["Hornbeam Seed"] = { enabled = 0, quantity = 10 },
+	["Ironwood Seed"] = { enabled = 0, quantity = 10 },
+	["Wild Berries"] = { enabled = 0, quantity = 20 },
+	["Wild Thornroot"] = { enabled = 0, quantity = 20 },
+}
+local k, v
+for k, v in restockDefaults do
+	if type(ShiftyRestockSettings.reagents[k]) ~= "table" then
+		ShiftyRestockSettings.reagents[k] = { enabled = v.enabled, quantity = v.quantity }
+	else
+		if ShiftyRestockSettings.reagents[k].enabled == nil then ShiftyRestockSettings.reagents[k].enabled = v.enabled end
+		if ShiftyRestockSettings.reagents[k].quantity == nil then ShiftyRestockSettings.reagents[k].quantity = v.quantity end
+	end
+end
+
+if type(ShiftyBuffSettings) ~= "table" then ShiftyBuffSettings = {} end
+if ShiftyBuffSettings.useMark == nil then ShiftyBuffSettings.useMark = 1 end
+if ShiftyBuffSettings.useThorns == nil then ShiftyBuffSettings.useThorns = 1 end
+
+function HS_EnsureSettings()
+	if type(ShiftySettings) ~= "table" then ShiftySettings = {} end
+	if type(ShiftySettings.cat) ~= "table" then ShiftySettings.cat = {} end
+	if type(ShiftySettings.bear) ~= "table" then ShiftySettings.bear = {} end
+
+	if ShiftySettings.cat.useShred == nil then ShiftySettings.cat.useShred = 1 end
+	if ShiftySettings.cat.useRake == nil then ShiftySettings.cat.useRake = 1 end
+	if ShiftySettings.cat.useTiger == nil then ShiftySettings.cat.useTiger = 1 end
+	if ShiftySettings.cat.useShift == nil then ShiftySettings.cat.useShift = 0 end
+	if ShiftySettings.cat.useCower == nil then ShiftySettings.cat.useCower = 0 end
+	if ShiftySettings.cat.useClawAdds == nil then ShiftySettings.cat.useClawAdds = 0 end
+
+	if ShiftySettings.bear.useSwipe == nil then ShiftySettings.bear.useSwipe = 1 end
+	if ShiftySettings.bear.useMaul == nil then ShiftySettings.bear.useMaul = 1 end
+	if ShiftySettings.bear.useSavageBite == nil then ShiftySettings.bear.useSavageBite = 1 end
+	if ShiftySettings.bear.useOOCShift == nil then ShiftySettings.bear.useOOCShift = 1 end
+
+	if HSAutoFF == nil then HSAutoFF = 1 end
+	if HSBearUseDemo == nil then HSBearUseDemo = 0 end
+	if HSBearUseMaul == nil then HSBearUseMaul = 1 end
+if HSBearUseSavageBite == nil then HSBearUseSavageBite = 1 end
+if HSBearUseOOCShift == nil then HSBearUseOOCShift = 1 end
+	if HSTigerUse == nil then HSTigerUse = ShiftySettings.cat.useTiger end
+	if HSShiftUse == nil then HSShiftUse = ShiftySettings.cat.useShift end
+	if HSCowerUse == nil then HSCowerUse = ShiftySettings.cat.useCower end
+	if HSClawAdd == nil then HSClawAdd = ShiftySettings.cat.useClawAdds end
+	return ShiftySettings
+end
+
+
 local hsHasNampower = type(GetCastInfo) == "function"
 local hsHasUnitXP = type(UnitXP) == "function" and pcall(UnitXP, "nop", "nop")
 local hsHasSuperWoW = type(SUPERWOW_VERSION) ~= "nil"
@@ -1488,28 +1549,21 @@ function HS_UpdateOverlay(forceHide)
 	local nextText = tostring(secondSpell or "")
 	local cooldownText = tostring(cooldownSpell or "")
 
-	hsOverlayFrame.currentLabel:SetText(currentText)
+	hsOverlayFrame.currentLabel:SetText("")
+	hsOverlayFrame.currentLabel:SetAlpha(0)
+	hsOverlayFrame.nextLabel:SetText("")
+	hsOverlayFrame.nextLabel:SetAlpha(0)
+	hsOverlayFrame.cooldownLabel:SetText("")
+	hsOverlayFrame.cooldownLabel:SetAlpha(0)
 	hsOverlayFrame.currentLabel:SetTextColor(1, 1, 1)
-
-	hsOverlayFrame.nextLabel:SetText(nextText)
 	hsOverlayFrame.nextLabel:SetTextColor(0.55, 0.85, 1.00)
-
-	hsOverlayFrame.cooldownLabel:SetText(cooldownText)
 	hsOverlayFrame.cooldownLabel:SetTextColor(1, 1, 1)
 
 	local phaseText, pr, pg, pb = HS_OverlayGetPhaseInfo()
-    local hasTarget = UnitExists("target") and (not UnitIsDead("target")) and UnitCanAttack("player", "target")
-    if hasTarget then
-        hsOverlayFrame.phaseText:SetText(phaseText or "")
-        hsOverlayFrame.phaseText:SetTextColor(pr, pg, pb)
-        if phaseText ~= nil and phaseText ~= "" then
-            hsOverlayFrame.phaseText:Show()
-        else
-            hsOverlayFrame.phaseText:Hide()
-        end
-    else
-        hsOverlayFrame.phaseText:Hide()
-    end
+	hsOverlayFrame.phaseText:SetText("")
+	hsOverlayFrame.phaseText:Hide()
+	hsOverlayFrame.cooldownText:SetText("")
+	hsOverlayFrame.cooldownText:Hide()
 
     hsOverlayFrame:Show()
 end
@@ -1549,15 +1603,15 @@ function HS_CreateOverlay()
 
 	f.cooldownLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	f.cooldownLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 20, -12)
-	f.cooldownLabel:SetText("COOLDOWN")
+	f.cooldownLabel:SetText("")
 
 	f.currentLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	f.currentLabel:SetPoint("TOP", f, "TOP", 0, -12)
-	f.currentLabel:SetText("CURRENT SPELL")
+	f.currentLabel:SetText("")
 
 	f.nextLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	f.nextLabel:SetPoint("TOPRIGHT", f, "TOPRIGHT", -20, -12)
-	f.nextLabel:SetText("NEXT SPELL")
+	f.nextLabel:SetText("")
 
 	f.cooldownText = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	f.cooldownText:SetPoint("BOTTOM", f, "CENTER", -75, 18)
@@ -1581,7 +1635,7 @@ function HS_CreateOverlay()
 	f.phaseText = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	f.phaseText:SetPoint("BOTTOM", f, "BOTTOM", 0, 12)
 	f.phaseText:SetJustifyH("CENTER")
-	f.phaseText:SetText("CAT")
+	f.phaseText:SetText("")
 
 	local store = HS_GetOverlayStore()
 	if store.scale ~= nil then ShiftyOverlayScale = store.scale end
@@ -1708,7 +1762,7 @@ function SH_CreateMinimapButton()
 	b.icon:SetWidth(20)
 	b.icon:SetHeight(20)
 	b.icon:SetPoint("CENTER", b, "CENTER", 0, 0)
-	b.icon:SetTexture("Interface\\Icons\\Ability_Druid_CatForm")
+	b.icon:SetTexture("Interface\\Icons\\Spell_Nature_Regeneration")
 
 	b.border = b:CreateTexture(nil, "OVERLAY")
 	b.border:SetWidth(52)
@@ -1731,52 +1785,37 @@ function SH_CreateMinimapButton()
 		end
 	end)
 	b:SetScript("OnClick", function()
-		if arg1 == "LeftButton" and IsShiftKeyDown() then
-			local store = HS_GetOverlayStore()
-			store.point = "CENTER"
-			store.relativePoint = "CENTER"
-			store.x = 0
-			store.y = 160
-			HS_RestoreOverlayPosition()
-			HS_UpdateOverlay(false)
-			HSPrint("|cffd08524Shifty |cffffffffOverlay position |cff24D040Reset")
-		elseif arg1 == "LeftButton" then
-			if ShiftyOverlayEnabled == 1 then
-				ShiftyOverlayEnabled = 0
-				HS_UpdateOverlay(true)
-				HSPrint("|cffd08524Shifty |cffffffffOverlay |cffD02424Disabled")
-			else
-				ShiftyOverlayEnabled = 1
-				HS_CreateOverlay()
-				HS_UpdateOverlay(false)
-				HSPrint("|cffd08524Shifty |cffffffffOverlay |cff24D040Enabled")
-			end
-		elseif arg1 == "RightButton" and IsShiftKeyDown() then
+	if arg1 == "LeftButton" then
+		if type(SH_OpenSettings) == "function" then
+			SH_OpenSettings()
+		elseif type(Shifty_OpenSettings) == "function" then
+			Shifty_OpenSettings()
+		elseif type(SH_ToggleSettings) == "function" then
+			SH_ToggleSettings()
+		elseif type(Shifty_ToggleSettings) == "function" then
+			Shifty_ToggleSettings()
+		else
+			HSPrint("|cffd08524Shifty |cffffffffSettings command: |cffecd226/shifty config")
+		end
+	elseif arg1 == "RightButton" then
+		if ShiftyOverlayEnabled == 1 then
+			ShiftyOverlayEnabled = 0
+			HS_UpdateOverlay(true)
+			HSPrint("|cffd08524Shifty |cffffffffDisplay |cffD02424Hidden")
+		else
+			ShiftyOverlayEnabled = 1
 			HS_CreateOverlay()
 			HS_UpdateOverlay(false)
-			HSPrint("|cffd08524Shifty |cffffffffOverlay |cffecd226Refreshed")
-		else
-			if type(SH_OpenSettings) == "function" then
-				SH_OpenSettings()
-			elseif type(Shifty_OpenSettings) == "function" then
-				Shifty_OpenSettings()
-			elseif type(SH_ToggleSettings) == "function" then
-				SH_ToggleSettings()
-			elseif type(Shifty_ToggleSettings) == "function" then
-				Shifty_ToggleSettings()
-			else
-				HSPrint("|cffd08524Shifty |cffffffffSettings command: |cffecd226/shifty config")
-			end
+			HSPrint("|cffd08524Shifty |cffffffffDisplay |cff24D040Shown")
 		end
-	end)
+	end
+end)
 	b:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(this, "ANCHOR_LEFT")
 		GameTooltip:AddLine("Shifty")
-		GameTooltip:AddLine("Left-click: Toggle overlay", 1, 1, 1)
-		GameTooltip:AddLine("Right-click: Open settings", 1, 1, 1)
-		GameTooltip:AddLine("Shift+Left-click: Reset overlay position", 1, 1, 1)
-		GameTooltip:AddLine("Shift+Right-click: Refresh overlay", 1, 1, 1)
-		GameTooltip:Show()
+		GameTooltip:AddLine("Left-click: Open settings", 1, 1, 1)
+		GameTooltip:AddLine("Right-click: Show/Hide display", 1, 1, 1)
+				GameTooltip:Show()
 	end)
 	b:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
@@ -1802,10 +1841,11 @@ end
 
 function SH_CreateSettingsFrame()
 	if ShiftySettingsFrame ~= nil then return ShiftySettingsFrame end
+	HS_EnsureSettings()
 
 	local f = CreateFrame("Frame", "ShiftySettingsFrame", UIParent)
-	f:SetWidth(320)
-	f:SetHeight(260)
+	f:SetWidth(780)
+	f:SetHeight(500)
 	f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	f:SetFrameStrata("DIALOG")
 	f:SetMovable(true)
@@ -1813,9 +1853,13 @@ function SH_CreateSettingsFrame()
 	f:RegisterForDrag("LeftButton")
 	f:SetScript("OnDragStart", function() this:StartMoving() end)
 	f:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
+f.bg = f:CreateTexture(nil, "BACKGROUND")
+f.bg:SetAllPoints(f)
+f.bg:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+f.bg:SetVertexColor(0.02, 0.02, 0.02, 0.88)
 	f:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		bgFile = "Interface\Tooltips\UI-Tooltip-Background",
+		edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
 		tile = true, tileSize = 16, edgeSize = 16,
 		insets = { left = 4, right = 4, top = 4, bottom = 4 }
 	})
@@ -1825,10 +1869,8 @@ function SH_CreateSettingsFrame()
 	f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	f.title:SetPoint("TOP", f, "TOP", 0, -12)
 	f.title:SetText("Shifty Settings")
-
-	f.subtitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	f.subtitle:SetPoint("TOP", f.title, "BOTTOM", 0, -6)
-	f.subtitle:SetText("Druid rotation and buff helper")
+local topClose = CreateFrame("Button", "ShiftySettingsCloseTopBtn", f, "UIPanelCloseButton")
+topClose:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -6)
 
 	local function MakeCheckbox(name, label, x, y, checkedFunc, onClickFunc)
 		local cb = CreateFrame("CheckButton", name, f, "UICheckButtonTemplate")
@@ -1843,36 +1885,9 @@ function SH_CreateSettingsFrame()
 		return cb
 	end
 
-	f.overlayCB = MakeCheckbox("ShiftySettingsOverlayCB", "Overlay enabled", 18, -44,
-		function() return ShiftyOverlayEnabled == 1 end,
-		function(v)
-			if v then ShiftyOverlayEnabled = 1 else ShiftyOverlayEnabled = 0 end
-			HS_CreateOverlay()
-			HS_UpdateOverlay(ShiftyOverlayEnabled ~= 1)
-		end
-	)
-
-	f.debugCB = MakeCheckbox("ShiftySettingsDebugCB", "Debug enabled", 18, -72,
-		function() return ShiftyDebugEnabled == 1 end,
-		function(v)
-			if v then ShiftyDebugEnabled = 1 else ShiftyDebugEnabled = 0 end
-		end
-	)
-
-	f.persistCB = MakeCheckbox("ShiftySettingsPersistCB", "Persistent log enabled", 18, -100,
-		function() return HS_IsPersistentLogEnabled() == true end,
-		function(v)
-			HS_SetPersistentLogEnabled(v)
-		end
-	)
-
-	f.catLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	f.catLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 18, -136)
-	f.catLabel:SetText("Quick actions")
-
 	local function MakeButton(name, text, x, y, onClick)
 		local b = CreateFrame("Button", name, f, "UIPanelButtonTemplate")
-		b:SetWidth(130)
+		b:SetWidth(150)
 		b:SetHeight(22)
 		b:SetPoint("TOPLEFT", f, "TOPLEFT", x, y)
 		b:SetText(text)
@@ -1880,39 +1895,182 @@ function SH_CreateSettingsFrame()
 		return b
 	end
 
-	f.singleBtn = MakeButton("ShiftySettingsSingleBtn", "Set Single Target", 18, -156, function()
-		ShiftyMode = "single"
-		HSMode = "single"
-		HSPrint("|cffd08524Shifty |cffffffffMode set to |cffecd226single")
+	f.overlayCB = MakeCheckbox("ShiftySettingsOverlayCB", "Display enabled", 18, -44,
+		function() return ShiftyOverlayEnabled == 1 end,
+		function(v) if v then ShiftyOverlayEnabled = 1 else ShiftyOverlayEnabled = 0 end HS_CreateOverlay() HS_UpdateOverlay(ShiftyOverlayEnabled ~= 1) end
+	)
+	f.debugCB = MakeCheckbox("ShiftySettingsDebugCB", "Debug enabled", 18, -74,
+		function() return ShiftyDebugEnabled == 1 end,
+		function(v) if v then ShiftyDebugEnabled = 1 else ShiftyDebugEnabled = 0 end end
+	)
+	f.persistCB = MakeCheckbox("ShiftySettingsPersistCB", "Persistent log enabled", 18, -104,
+		function() return HS_IsPersistentLogEnabled() == true end,
+		function(v) HS_SetPersistentLogEnabled(v) end
+	)
+	f.ffCB = MakeCheckbox("ShiftySettingsFFCB", "Auto Faerie Fire (Feral)", 18, -134,
+		function() return HSAutoFF == 1 end,
+		function(v) if v then HSAutoFF = 1 else HSAutoFF = 0 end end
+	)
+	f.buffMarkCB = MakeCheckbox("ShiftySettingsBuffMarkCB", "Use Mark of the Wild", 18, -164,
+		function() return type(ShiftyBuffSettings) == "table" and ShiftyBuffSettings.useMark == 1 end,
+		function(v)
+			if type(ShiftyBuffSettings) ~= "table" then ShiftyBuffSettings = {} end
+			ShiftyBuffSettings.useMark = v and 1 or 0
+		end
+	)
+	f.buffThornsCB = MakeCheckbox("ShiftySettingsBuffThornsCB", "Use Thorns", 18, -194,
+		function() return type(ShiftyBuffSettings) == "table" and ShiftyBuffSettings.useThorns == 1 end,
+		function(v)
+			if type(ShiftyBuffSettings) ~= "table" then ShiftyBuffSettings = {} end
+			ShiftyBuffSettings.useThorns = v and 1 or 0
+		end
+	)
+
+	f.catLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	f.catLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 280, -44)
+	f.catLabel:SetText("Cat options")
+
+	f.catShredCB = MakeCheckbox("ShiftySettingsCatShredCB", "Use Shred when behind", 280, -64,
+		function() HS_EnsureSettings() return ShiftySettings.cat.useShred == 1 end,
+		function(v) HS_EnsureSettings() ShiftySettings.cat.useShred = v and 1 or 0 end
+	)
+	f.catRakeCB = MakeCheckbox("ShiftySettingsCatRakeCB", "Use Rake", 280, -92,
+		function() HS_EnsureSettings() return ShiftySettings.cat.useRake == 1 end,
+		function(v) HS_EnsureSettings() ShiftySettings.cat.useRake = v and 1 or 0 end
+	)
+	f.catTigerCB = MakeCheckbox("ShiftySettingsCatTigerCB", "Use Tiger's Fury", 280, -120,
+		function() return HSTigerUse == 1 end,
+		function(v) if v then HSTigerUse = 1 else HSTigerUse = 0 end HS_EnsureSettings() ShiftySettings.cat.useTiger = HSTigerUse end
+	)
+	f.catShiftCB = MakeCheckbox("ShiftySettingsCatShiftCB", "Use Powershift", 280, -148,
+		function() return HSShiftUse == 1 end,
+		function(v) if v then HSShiftUse = 1 else HSShiftUse = 0 end HS_EnsureSettings() ShiftySettings.cat.useShift = HSShiftUse end
+	)
+	f.catCowerCB = MakeCheckbox("ShiftySettingsCatCowerCB", "Use Cower", 280, -176,
+		function() return HSCowerUse == 1 end,
+		function(v) if v then HSCowerUse = 1 else HSCowerUse = 0 end HS_EnsureSettings() ShiftySettings.cat.useCower = HSCowerUse end
+	)
+	f.catClawAddCB = MakeCheckbox("ShiftySettingsCatClawAddsCB", "Use Claw on adds / non-bosses", 280, -204,
+		function() return HSClawAdd == 1 end,
+		function(v) if v then HSClawAdd = 1 else HSClawAdd = 0 end HS_EnsureSettings() ShiftySettings.cat.useClawAdds = HSClawAdd end
+	)
+
+	f.bearLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	f.bearLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 280, -250)
+	f.bearLabel:SetText("Bear options")
+
+	f.bearMaulCB = MakeCheckbox("ShiftySettingsBearMaulCB", "Use Maul", 280, -270,
+		function() return HSBearUseMaul == 1 end,
+		function(v) if v then HSBearUseMaul = 1 else HSBearUseMaul = 0 end HS_EnsureSettings() ShiftySettings.bear.useMaul = HSBearUseMaul end
+	)
+	f.bearSwipeCB = MakeCheckbox("ShiftySettingsBearSwipeCB", "Use Swipe in AOE", 280, -298,
+		function() HS_EnsureSettings() return ShiftySettings.bear.useSwipe == 1 end,
+		function(v) HS_EnsureSettings() ShiftySettings.bear.useSwipe = v and 1 or 0 end
+	)
+	f.bearBiteCB = MakeCheckbox("ShiftySettingsBearBiteCB", "Use Savage Bite", 280, -326,
+		function() HS_EnsureSettings() return HSBearUseSavageBite == 1 and ShiftySettings.bear.useSavageBite == 1 end,
+		function(v) if v then HSBearUseSavageBite = 1 else HSBearUseSavageBite = 0 end HS_EnsureSettings() ShiftySettings.bear.useSavageBite = HSBearUseSavageBite end
+	)
+	f.bearShiftCB = MakeCheckbox("ShiftySettingsBearShiftCB", "Use OOC Bear powershift", 280, -354,
+		function() HS_EnsureSettings() return HSBearUseOOCShift == 1 and ShiftySettings.bear.useOOCShift == 1 end,
+		function(v) if v then HSBearUseOOCShift = 1 else HSBearUseOOCShift = 0 end HS_EnsureSettings() ShiftySettings.bear.useOOCShift = HSBearUseOOCShift end
+	)
+	f.bearDemoCB = MakeCheckbox("ShiftySettingsBearDemoCB", "Use Demo Roar opener", 280, -382,
+		function() return HSBearUseDemo == 1 end,
+		function(v) if v then HSBearUseDemo = 1 else HSBearUseDemo = 0 end end
+	)
+
+f.restockLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+f.restockLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 540, -44)
+f.restockLabel:SetText("Restock reagents")
+
+local function MakeSmallButton(name, text, x, y, onClick)
+	local b = CreateFrame("Button", name, f, "UIPanelButtonTemplate")
+	b:SetWidth(22)
+	b:SetHeight(20)
+	b:SetPoint("TOPLEFT", f, "TOPLEFT", x, y)
+	b:SetText(text)
+	b:SetScript("OnClick", onClick)
+	return b
+end
+
+local function MakeRestockRow(key, label, y)
+	local cbName = "ShiftyRestockCB_" .. string.gsub(key, "[^%w]", "")
+	local qtyName = "ShiftyRestockQty_" .. string.gsub(key, "[^%w]", "")
+
+	local cb = MakeCheckbox(cbName, label, 540, y,
+		function()
+			if type(ShiftyRestockSettings) ~= "table" or type(ShiftyRestockSettings.reagents) ~= "table" then return false end
+			return ShiftyRestockSettings.reagents[key] and ShiftyRestockSettings.reagents[key].enabled == 1
+		end,
+		function(v)
+			if type(ShiftyRestockSettings) ~= "table" then ShiftyRestockSettings = {} end
+			if type(ShiftyRestockSettings.reagents) ~= "table" then ShiftyRestockSettings.reagents = {} end
+			if type(ShiftyRestockSettings.reagents[key]) ~= "table" then ShiftyRestockSettings.reagents[key] = { enabled = 0, quantity = 0 } end
+			ShiftyRestockSettings.reagents[key].enabled = v and 1 or 0
+		end
+	)
+
+	local qty = f:CreateFontString(qtyName, "OVERLAY", "GameFontHighlightSmall")
+	qty:SetPoint("LEFT", cb, "RIGHT", 155, 0)
+	local function UpdateQty()
+		local q = 0
+		if type(ShiftyRestockSettings) == "table" and type(ShiftyRestockSettings.reagents) == "table" and type(ShiftyRestockSettings.reagents[key]) == "table" then
+			q = tonumber(ShiftyRestockSettings.reagents[key].quantity) or 0
+		end
+		qty:SetText("Qty: " .. q)
+	end
+	cb:SetScript("OnShow", function()
+		if type(ShiftyRestockSettings) == "table" and type(ShiftyRestockSettings.reagents) == "table" and type(ShiftyRestockSettings.reagents[key]) == "table" and ShiftyRestockSettings.reagents[key].enabled == 1 then
+			this:SetChecked(1)
+		else
+			this:SetChecked(nil)
+		end
+		UpdateQty()
 	end)
 
-	f.aoeBtn = MakeButton("ShiftySettingsAOEBtn", "Set AOE", 160, -156, function()
-		ShiftyMode = "aoe"
-		HSMode = "aoe"
-		HSPrint("|cffd08524Shifty |cffffffffMode set to |cffecd226aoe")
+	local minus = MakeSmallButton("ShiftyRestockMinus_" .. string.gsub(key, "[^%w]", ""), "-", 670, y + 4, function()
+		if type(ShiftyRestockSettings.reagents[key]) ~= "table" then ShiftyRestockSettings.reagents[key] = { enabled = 0, quantity = 0 } end
+		local q = tonumber(ShiftyRestockSettings.reagents[key].quantity) or 0
+		q = q - 1
+		if q < 0 then q = 0 end
+		ShiftyRestockSettings.reagents[key].quantity = q
+		UpdateQty()
 	end)
+	local plus = MakeSmallButton("ShiftyRestockPlus_" .. string.gsub(key, "[^%w]", ""), "+", 698, y + 4, function()
+		if type(ShiftyRestockSettings.reagents[key]) ~= "table" then ShiftyRestockSettings.reagents[key] = { enabled = 0, quantity = 0 } end
+		local q = tonumber(ShiftyRestockSettings.reagents[key].quantity) or 0
+		q = q + 1
+		if q > 200 then q = 200 end
+		ShiftyRestockSettings.reagents[key].quantity = q
+		UpdateQty()
+	end)
+end
 
-	f.resetBtn = MakeButton("ShiftySettingsResetBtn", "Reset Overlay", 18, -186, function()
+MakeRestockRow("Maple Seed", "Maple Seed", -64)
+MakeRestockRow("Stranglethorn Seed", "Stranglethorn Seed", -92)
+MakeRestockRow("Ashwood Seed", "Ashwood Seed", -120)
+MakeRestockRow("Hornbeam Seed", "Hornbeam Seed", -148)
+MakeRestockRow("Ironwood Seed", "Ironwood Seed", -176)
+MakeRestockRow("Wild Berries", "Wild Berries", -204)
+MakeRestockRow("Wild Thornroot", "Wild Thornroot", -232)
+
+	f.singleBtn = MakeButton("ShiftySettingsSingleBtn", "Set Single Target", 18, -380, function()
+		ShiftyMode = "single"; HSMode = "single"; HSPrint("|cffd08524Shifty |cffffffffMode set to |cffecd226single")
+	end)
+	f.aoeBtn = MakeButton("ShiftySettingsAOEBtn", "Set AOE", 18, -408, function()
+		ShiftyMode = "aoe"; HSMode = "aoe"; HSPrint("|cffd08524Shifty |cffffffffMode set to |cffecd226aoe")
+	end)
+	f.resetBtn = MakeButton("ShiftySettingsResetBtn", "Reset Display", 18, -436, function()
 		local store = HS_GetOverlayStore()
-		store.point = "CENTER"
-		store.relativePoint = "CENTER"
-		store.x = 0
-		store.y = 160
-		HS_RestoreOverlayPosition()
-		HS_UpdateOverlay(false)
-		HSPrint("|cffd08524Shifty |cffffffffOverlay position |cff24D040Reset")
+		store.point = "CENTER"; store.relativePoint = "CENTER"; store.x = 0; store.y = 160
+		HS_RestoreOverlayPosition(); HS_UpdateOverlay(false)
+		HSPrint("|cffd08524Shifty |cffffffffDisplay position |cff24D040Reset")
 	end)
-
-	f.clearBtn = MakeButton("ShiftySettingsClearBtn", "Clear Logs", 160, -186, function()
-		SH_AllLogsClear()
-		HSPrint("|cffd08524Shifty |cffffffffLogs |cff24D040Cleared")
+	f.clearBtn = MakeButton("ShiftySettingsClearBtn", "Clear Logs", 18, -464, function()
+		SH_AllLogsClear(); HSPrint("|cffd08524Shifty |cffffffffLogs |cff24D040Cleared")
 	end)
-
-	f.closeBtn = MakeButton("ShiftySettingsCloseBtn", "Close", 95, -220, function()
-		f:Hide()
-	end)
-	f.closeBtn:SetWidth(120)
-
+	
 	ShiftySettingsFrame = f
 	return f
 end
@@ -1933,6 +2091,7 @@ end
 
 
 function Shifty_OnLoad()
+	HS_EnsureSettings()
     if UnitClass("player") == "Druid" then
         this:RegisterEvent("PLAYER_ENTERING_WORLD")
         this:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1947,6 +2106,7 @@ function Shifty_OnLoad()
 		this:RegisterEvent("SPELL_FAILED_NOT_BEHIND")
 		this:RegisterEvent("UI_ERROR_MESSAGE")
 		this:RegisterEvent("PLAYER_TARGET_CHANGED")
+		this:RegisterEvent("MERCHANT_SHOW")
     end
 
 	SlashCmdList["SHIFTY"] = Shifty_SlashCommand;
@@ -2297,6 +2457,10 @@ function Shifty_OnEvent(event)
 		HS_UpdateOverlay(false)
 	end
 
+	if event == "MERCHANT_SHOW" then
+		if type(SH_Restock_OnMerchantShow) == "function" then SH_Restock_OnMerchantShow() end
+	end
+
 	if event == "VARIABLES_LOADED" then
 		HSPrint('|cffd08524Shifty |cffffffffLoaded')
 		HSPrint('|cffd08524Shifty: |cffffffffType |cffecd226/shifty |cffffffffto show options')
@@ -2326,6 +2490,7 @@ function Shifty_OnEvent(event)
 			if ShiftyMode == nil or ShiftyMode == "" then ShiftyMode = "single" end
 			if ShiftyOverlayEnabled == nil then ShiftyOverlayEnabled = 1 end
 			if ShiftyOverlayScale == nil then ShiftyOverlayScale = 1 end
+			HS_EnsureSettings()
 
 			HSMode = ShiftyMode
 			ShiftyLastSpell = nil
@@ -2549,28 +2714,106 @@ function ToggleAutoAttack(switch)
 	end
 end
 
+
+function HS_BearCanQueueMaul(rage)
+	local now = GetTime()
+	if rage < 15 then return false end
+	if IsSpellOnCD("Maul") then return false end
+	if (now - (HSBearExec.lastMaulQueueAt or 0)) < 1.20 then return false end
+	HSBearExec.lastMaulQueueAt = now
+	return true
+end
+
+function HS_BearCanUseDemo(rage)
+	local now = GetTime()
+	if HSBearUseDemo ~= 1 then return false end
+	if rage < 10 then return false end
+	if IsSpellOnCD("Demoralizing Roar") then return false end
+	if IsTDebuff('target', 'Ability_Druid_DemoralizingRoar') then return false end
+	if (now - (HSBearExec.lastDemoAt or 0)) < 6.0 then return false end
+	HSBearExec.lastDemoAt = now
+	return true
+end
+
+function HS_BearCanUseFF()
+	local now = GetTime()
+	if HSAutoFF ~= 1 then return false end
+	if IsTDebuff('target', 'Spell_Nature_FaerieFire') then return false end
+	if IsSpellOnCD("Faerie Fire (Feral)") then return false end
+	if (now - (HSBearExec.lastFFAt or 0)) < 3.0 then return false end
+	HSBearExec.lastFFAt = now
+	return true
+end
+
+
+function HS_BearCanUseSavageBite(rage)
+	local now = GetTime()
+	if HSBearUseSavageBite ~= 1 then return false end
+	if type(ShiftySettings) == "table" and type(ShiftySettings.bear) == "table" and ShiftySettings.bear.useSavageBite ~= 1 then return false end
+	if rage < 40 then return false end
+	if IsSpellOnCD("Savage Bite") then return false end
+	if (now - (HSBearExec.lastSavageBiteAt or 0)) < 1.20 then return false end
+	HSBearExec.lastSavageBiteAt = now
+	return true
+end
+
+
+function HS_BearCanOOCShift()
+	HS_EnsureSettings()
+	if HSBearUseOOCShift ~= 1 then return false end
+	if ShiftySettings.bear.useOOCShift ~= 1 then return false end
+	if UnitAffectingCombat('player') then return false end
+	if UnitMana('player') == nil or UnitMana('player') >= 10 then return false end
+	local formId = GetActiveForm()
+	if formId ~= 1 then return false end
+	if HSShiftUse ~= 1 then return false end
+	if hsReshiftChecked == false then
+		hsHasReshift = HSHasSpell("Reshift")
+		hsReshiftChecked = true
+	end
+	if hsHasReshift ~= true then return false end
+	if HSIsSpellReady("Reshift") ~= true then return false end
+	if GetTime() - hsLastShiftAttempt < HS_SHIFT_RETRY_GAP then return false end
+	return true
+end
+
+function HS_BearTryOOCShift()
+	if HS_BearCanOOCShift() ~= true then return false end
+	hsLastShiftAttempt = GetTime()
+	HSDebugTrace("CAST", "Reshift (bear ooc rage)")
+	HSCastSpellByIndex("Reshift")
+	return true
+end
+
 function HSBearSingle()
 	if UnitExists("target") ~= 1 or UnitIsDead('target') then return end
 	StAttack(1)
 	HSDebugTrace("BEAR_SINGLE", "")
 
-	if HSAutoFF == 1
-	and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false
-	and not IsSpellOnCD("Faerie Fire (Feral)") then
+	local rage = UnitMana('player') or 0
+	HS_EnsureSettings()
+
+	if HS_BearCanUseFF() then
 		HSDebugTrace("CAST", "Faerie Fire (bear single)")
-		HSCast("Faerie Fire (Feral)(Rank 4)")
+		CastSpellByName("Faerie Fire (Feral)(Rank 4)")
 		return
 	end
 
-	if UnitMana('player') >= 20 and not IsSpellOnCD("Demoralizing Roar") and IsTDebuff('target', 'Ability_Druid_DemoralizingRoar') == false then
-		HSDebugTrace("CAST", "Demoralizing Roar")
-		HSCast("Demoralizing Roar")
+	if HS_BearCanUseDemo(rage) then
+		HSDebugTrace("CAST", "Demoralizing Roar (bear opener)")
+		CastSpellByName("Demoralizing Roar")
 		return
 	end
 
-	if UnitMana('player') >= 15 and not IsSpellOnCD("Maul") then
+	if HS_BearCanUseSavageBite(rage) then
+		HSDebugTrace("CAST", "Savage Bite (bear single)")
+		CastSpellByName("Savage Bite")
+		return
+	end
+
+	if ShiftySettings.bear.useMaul == 1 and (HSBearUseMaul == nil or HSBearUseMaul == 1) and HS_BearCanQueueMaul(rage) then
 		HSDebugTrace("CAST", "Maul (bear single)")
-		HSCast("Maul")
+		CastSpellByName("Maul")
 		return
 	end
 end
@@ -2580,29 +2823,36 @@ function HSBearAOE()
 	StAttack(1)
 	HSDebugTrace("BEAR_AOE", "")
 
-	if HSAutoFF == 1
-	and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false
-	and not IsSpellOnCD("Faerie Fire (Feral)") then
+	local rage = UnitMana('player') or 0
+	HS_EnsureSettings()
+
+	if HS_BearCanUseFF() then
 		HSDebugTrace("CAST", "Faerie Fire (bear aoe)")
-		HSCast("Faerie Fire (Feral)(Rank 4)")
+		CastSpellByName("Faerie Fire (Feral)(Rank 4)")
 		return
 	end
 
-	if UnitMana('player') >= 15 and not IsSpellOnCD("Swipe") then
+	if ShiftySettings.bear.useSwipe == 1 and rage >= 15 and not IsSpellOnCD("Swipe") then
 		HSDebugTrace("CAST", "Swipe")
-		HSCast("Swipe")
+		CastSpellByName("Swipe")
 		return
 	end
 
-	if UnitMana('player') >= 10 and not IsSpellOnCD("Demoralizing Roar") then
+	if HS_BearCanUseDemo(rage) then
 		HSDebugTrace("CAST", "Demoralizing Roar (aoe)")
-		HSCast("Demoralizing Roar")
+		CastSpellByName("Demoralizing Roar")
 		return
 	end
 
-	if UnitMana('player') >= 15 and not IsSpellOnCD("Maul") then
+	if HS_BearCanUseSavageBite(rage) then
+		HSDebugTrace("CAST", "Savage Bite (bear aoe)")
+		CastSpellByName("Savage Bite")
+		return
+	end
+
+	if ShiftySettings.bear.useMaul == 1 and (HSBearUseMaul == nil or HSBearUseMaul == 1) and HS_BearCanQueueMaul(rage) then
 		HSDebugTrace("CAST", "Maul (bear aoe)")
-		HSCast("Maul")
+		CastSpellByName("Maul")
 	end
 end
 
@@ -2623,6 +2873,7 @@ function ShiftyAddon()
 	end
 
 	if formId == 1 then
+		if HS_BearTryOOCShift() == true then return end
 		if ShiftyMode == "aoe" then
 			HSBearAOE()
 		else
@@ -2660,7 +2911,7 @@ function ShiftyAddon()
 					end
 				else
 					if partynum > 2 then
-						if(not IsSpellOnCD("Cower")) and HSCowerUse == 1 then
+						if(not IsSpellOnCD("Cower")) and HSCowerUse == 1 and ShiftySettings.cat.useCower == 1 then
 							HSCast("Cower")
 						else
 							Atk("Auto",stealthed,romactive,romcooldown)
@@ -2704,6 +2955,7 @@ function ShiftyAddon()
 end
 
 function Atk(CorS,stealthyn,romyn,romcd)
+	HS_EnsureSettings()
 	StAttack(1)
 	local comboPoints = HSGetComboPoints()
 	local canRake = not HSIsDebuffImmune("rake")
@@ -2759,13 +3011,13 @@ function Atk(CorS,stealthyn,romyn,romcd)
 	HSDebugTrace("ATK_THRESHOLDS", "mode="..tostring(ShiftyMode).." CorS="..tostring(CorS).." builder="..builderSpell.." bcost="..tostring(builderCost).." fbthresh="..tostring(fbthresh).." shth="..tostring(shth))
 	if UnitIsDead('target') then doclaw = 0 HSDebugTrace("TARGET_DEAD", "") return end
 
-	if HSTigerUse == 1 and stealthyn == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and UnitMana('Player') >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
+	if ShiftySettings.cat.useTiger == 1 and HSTigerUse == 1 and stealthyn == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and UnitMana('Player') >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
 		HSDebugTrace("CAST", "Tiger's Fury")
 		HSCast("Tiger's Fury(Rank 4)")
 		return
 	end
 
-	if stealthyn == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or UnitMana('Player') >= rakeCost) then
+	if ShiftySettings.cat.useRake == 1 and stealthyn == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or UnitMana('Player') >= rakeCost) then
 		HSDebugTrace("CAST", "Rake (missing)")
 		HSCast("Rake")
 		return
@@ -2806,7 +3058,7 @@ function Atk(CorS,stealthyn,romyn,romcd)
 		else
 			HSDebugTrace("LOW_ENERGY", "builder mana low; attempting FF/shift")
 			if UnitAffectingCombat('Player') and UnitExists("target") then
-				if CanShift() == true then
+				if ShiftySettings.cat.useShift == 1 and CanShift() == true then
 					if HSTryShift("builder low energy") == true then return end
 				end
 				if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthyn == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
@@ -2837,7 +3089,7 @@ function Atk(CorS,stealthyn,romyn,romcd)
 		else
 			HSDebugTrace("LOW_ENERGY", "finisher mana low; attempting FF/shift")
 			if UnitAffectingCombat('Player') and UnitExists("target") then
-				if CanShift() == true then
+				if ShiftySettings.cat.useShift == 1 and CanShift() == true then
 					if HSTryShift("finisher low energy") == true then return end
 				end
 				if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthyn == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
