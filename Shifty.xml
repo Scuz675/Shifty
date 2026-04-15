@@ -7,8 +7,11 @@ xsi:schemaLocation="http://www.blizzard.com/wow/ui/ C:\Projects\WoW\Bin\Interfac
   <Script file="Localization.lua"/>
   
   <!-- My Script -->
+  <Script file="ShiftyUtils.lua"/>
   <Script file="ShiftyCore.lua"/>
   <Script file="ShiftyBear.lua"/>
+  <Script file="ShiftyCat.lua"/>
+  <Script file="ShiftyMoonkin.lua"/>
 
   <!-- My AddOn Frames -->
   <Frame name="ShiftyFrame" parent="UIParent">

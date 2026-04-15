@@ -546,8 +546,17 @@ function HS_GetBalancePredictedSpellName()
 	HSBalanceSetProcReason(nil)
 
 	if HSMode == "aoe" then
-		if HSBalanceCanCast("Hurricane") and canCastOnTarget then
-			predicted = "Hurricane"
+		local wantIS = insectUp ~= true and HS_HasRecentCastLock("Insect Swarm") ~= true and HSBalanceCanCast("Insect Swarm") and canCastOnTarget
+		local wantMF = moonfireUp ~= true and HS_HasRecentCastLock("Moonfire") ~= true and HSBalanceCanCast("Moonfire") and canCastOnTarget
+
+		if wantIS then
+			predicted = "Insect Swarm"
+		elseif wantMF then
+			predicted = "Moonfire"
+		elseif HSBalanceHasNaturalBoon() == true or HSBalanceHasClearcasting() == true then
+			if HSBalanceCanCast("Hurricane") and canCastOnTarget then
+				predicted = "Hurricane"
+			end
 		elseif HSBalanceCanCast("Wrath") and canCastOnTarget then
 			predicted = "Wrath"
 		end
@@ -667,6 +676,11 @@ function HSBalanceCastRotation()
 	HSBalanceRememberPrediction(spellName)
 	if spellName == "Moonfire" or spellName == "Insect Swarm" then
 		HSBalanceMarkDotPending(spellName)
+	end
+
+	if spellName == "Hurricane" then
+		HSBalanceRememberPrediction(spellName)
+		return false
 	end
 
 	local didCast = HSCast(spellName)

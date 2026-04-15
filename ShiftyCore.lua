@@ -1156,106 +1156,51 @@ end
 
 function HS_GetPredictedSpellName()
 	if UnitExists("target") ~= 1 or UnitIsDead("target") then
-		hsLastBalanceDecisionSpell = nil
-		hsLastBalanceDecisionPhase = nil
-		hsLastBalanceDecisionAt = 0
-		hsLastRotationLockUntil = 0
-		hsLastRotationLockSpell = nil
-		hsBalanceArcaneEntryLockUntil = 0
-		hsBalanceArcaneFlushUntil = 0
-		hsBalancePreArcaneHoldUntil = 0
-		HSBalanceClearQueueLock()
-		HSBalanceResetDotLocks()
-		HSBalanceResetOpenerState()
-		return nil
-	end
-	if HS_IsBalanceMode() == true then
-		return HS_GetBalancePredictedSpellName()
-	end
-	local formId = GetActiveForm()
-	local energy = UnitMana("player") or 0
-	local comboPoints = HSGetComboPoints()
-	local stealthed = HSBuffChk("Ability_Ambush")
-	if formId == 1 then
-		if HSAutoFF == 1 and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and not IsSpellOnCD("Faerie Fire (Feral)") then
-			return "Faerie Fire (Feral)"
-		end
-		if ShiftyMode == "aoe" then
-			if energy >= 15 and not IsSpellOnCD("Swipe") then return "Swipe" end
-			if energy >= 10 and not IsSpellOnCD("Demoralizing Roar") then return "Demoralizing Roar" end
-			if energy >= 15 and not IsSpellOnCD("Maul") then return "Maul" end
+		if type(SH_Moonkin_ResetState) == "function" then
+			SH_Moonkin_ResetState()
 		else
-			if energy >= 20 and not IsSpellOnCD("Demoralizing Roar") and IsTDebuff('target', 'Ability_Druid_DemoralizingRoar') == false then return "Demoralizing Roar" end
-			if energy >= 15 and not IsSpellOnCD("Maul") then return "Maul" end
+			hsLastBalanceDecisionSpell = nil
+			hsLastBalanceDecisionPhase = nil
+			hsLastBalanceDecisionAt = 0
+			hsLastRotationLockUntil = 0
+			hsLastRotationLockSpell = nil
+			hsBalanceArcaneEntryLockUntil = 0
+			hsBalanceArcaneFlushUntil = 0
+			hsBalancePreArcaneHoldUntil = 0
+			if type(HSBalanceClearQueueLock) == "function" then HSBalanceClearQueueLock() end
+			if type(HSBalanceResetDotLocks) == "function" then HSBalanceResetDotLocks() end
+			if type(HSBalanceResetOpenerState) == "function" then HSBalanceResetOpenerState() end
 		end
 		return nil
 	end
 
-	if UnitPowerType("player") ~= 3 then
+	if type(SH_Moonkin_IsActive) == "function" and SH_Moonkin_IsActive() == true then
+		if type(SH_Moonkin_GetPredictedSpellName) == "function" then
+			return SH_Moonkin_GetPredictedSpellName()
+		end
+		if type(HS_GetBalancePredictedSpellName) == "function" then
+			return HS_GetBalancePredictedSpellName()
+		end
 		return nil
 	end
 
-	if stealthed == true then
-		if HSBuffChk('Ability_Mount_JungleTiger') == false and not IsSpellOnCD("Tiger's Fury") then return "Tiger's Fury" end
-		if CheckInteractDistance('target',3) == 1 and not IsSpellOnCD("Ravage") then return "Ravage" end
+	local formId = GetActiveForm()
+	if formId == 1 then
+		if type(SH_Bear_GetPredictedSpellName) == "function" then
+			return SH_Bear_GetPredictedSpellName()
+		end
+		return nil
 	end
 
-	local canRake = not HSIsDebuffImmune("rake")
-	local canFF = not HSIsDebuffImmune("ff")
-	local canRip = not HSIsDebuffImmune("rip")
-	local ferocity = SpecCheck(2,1) or 0
-	local idolofferocity = 0
-	local impshred = SpecCheck(2,9) or 0
-	local rakeCost = 40 - ferocity
-	local shredCost = 100 - (40 + impshred*6 + 20)
-	local clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
-	local builderSpell = "Claw"
-	local builderCost = clawCost
-	local fbthresh = 5
-	if ShiftyMode == "aoe" then fbthresh = 4 end
-	if GetInventoryItemLink('player',18) ~= nil and string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity') then
-		idolofferocity = 3
-		clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
-		builderCost = clawCost
-	end
-	if BehindTarget() == true and energy >= HS_SHRED_ENERGY_THRESHOLD and ShiftyMode ~= "aoe" and FindActionSlot("Spell_Shadow_VampiricAura") ~= 0 then
-		builderSpell = "Shred"
-		builderCost = shredCost
+	if UnitPowerType("player") == 3 then
+		if type(SH_Cat_GetPredictedSpellName) == "function" then
+			return SH_Cat_GetPredictedSpellName()
+		end
+		return nil
 	end
 
-	if HSTigerUse == 1 and stealthed == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and energy >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
-		return "Tiger's Fury"
-	end
-	if stealthed == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or energy >= rakeCost) then
-		return "Rake"
-	end
-	if HSAutoFF == 1 and stealthed == false and UnitExists("target") and CheckInteractDistance('target',3) == 1 and canFF and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and comboPoints <= HS_FF_REFRESH_MAX_CP then
-		return "Faerie Fire (Feral)"
-	end
-	if comboPoints < fbthresh then
-		if energy >= builderCost or HSBuffChk("Spell_Shadow_ManaBurn") == true then
-			if not IsSpellOnCD(builderSpell) then return builderSpell end
-		elseif UnitAffectingCombat('player') and UnitExists("target") then
-			if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthed == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
-				return "Faerie Fire (Feral)"
-			end
-		end
-	else
-		local shouldRip = comboPoints == 5 and HasRip() == false and canRip and ShiftyMode ~= "aoe"
-		local finisherEnergy = 15
-		if shouldRip then finisherEnergy = 30 end
-		if energy >= finisherEnergy or HSBuffChk("Spell_Shadow_ManaBurn") == true then
-			if shouldRip and not IsSpellOnCD("Rip") then return "Rip" end
-			if IsUse(FindActionSlot("Ability_Druid_FerociousBite")) == 1 and not IsSpellOnCD("Ferocious Bite") then return "Ferocious Bite" end
-		elseif UnitAffectingCombat('player') and UnitExists("target") then
-			if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthed == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
-				return "Faerie Fire (Feral)"
-			end
-		end
-	end
 	return nil
 end
-
 
 function HS_GetOverlayStore()
 	if ShiftyDebugLog == nil or type(ShiftyDebugLog) ~= "table" then
@@ -2873,58 +2818,26 @@ function ShiftyAddon()
 	end
 
 	if formId == 1 then
-		if HS_BearTryOOCShift() == true then return end
-		if ShiftyMode == "aoe" then
-			HSBearAOE()
-		else
-			HSBearSingle()
+		if type(SH_Bear_Run) == "function" then
+			SH_Bear_Run()
+			return
 		end
-		return
 	end
 
-	if HS_IsBalanceMode() == true then
-		if HSBalanceCastRotation() == true then
-			HS_UpdateOverlay(false)
+	if type(SH_Moonkin_IsActive) == "function" and SH_Moonkin_IsActive() == true then
+		if type(SH_Moonkin_Run) == "function" then
+			if SH_Moonkin_Run() == true then
+				HS_UpdateOverlay(false)
+			end
+			return
 		end
-		return
 	end
 
 	if UnitPowerType("Player") == 3 then
-		if stealthed == true then
-			if HSBuffChk('Ability_Mount_JungleTiger') == false then
-				HSCast("Tiger's Fury(Rank 4)")
-			end
-			if CheckInteractDistance('target',3) == 1 then
-				HSCast("Ravage")
-			end
-		else
-			if tot == playername then
-				if UnitLevel('target') == -1 then
-					if lipcd == 0 and lipslot ~= 0 then
-						EShift()
-					elseif(not IsSpellOnCD("Cower")) then
-						HSCast("Cower")
-					elseif(not IsSpellOnCD("Barkskin")) then
-						EShift()
-					else
-						Atk("Auto",stealthed,romactive,romcooldown)
-					end
-				else
-					if partynum > 2 then
-						if(not IsSpellOnCD("Cower")) and HSCowerUse == 1 and ShiftySettings.cat.useCower == 1 then
-							HSCast("Cower")
-						else
-							Atk("Auto",stealthed,romactive,romcooldown)
-						end
-					else
-						Atk("Auto",stealthed,romactive,romcooldown)
-					end
-				end
-			else
-				Atk("Auto",stealthed,romactive,romcooldown)
-			end
+		if type(SH_Cat_Run) == "function" then
+			SH_Cat_Run(tot, stealthed, romactive, romcooldown, partynum, lipcd, lipslot)
+			return
 		end
-		return
 	end
 
 	if UnitLevel('target') == -1 and UnitAffectingCombat('Player') and UnitInRaid('Player') then
