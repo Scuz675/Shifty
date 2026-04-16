@@ -1,4 +1,5 @@
 -- Shifty DLL Branch v24 pre-arcane control
+-- SAFE CAT SPLIT PATCH: XML/TOC now load Cat and Moonkin modules before runtime dispatch.
 -- Shifty DLL Branch v19
 -- Shifty DLL Branch v18
 -- Shifty DLL Branch v17
@@ -1156,51 +1157,52 @@ end
 
 function HS_GetPredictedSpellName()
 	if UnitExists("target") ~= 1 or UnitIsDead("target") then
-		if type(SH_Moonkin_ResetState) == "function" then
-			SH_Moonkin_ResetState()
-		else
-			hsLastBalanceDecisionSpell = nil
-			hsLastBalanceDecisionPhase = nil
-			hsLastBalanceDecisionAt = 0
-			hsLastRotationLockUntil = 0
-			hsLastRotationLockSpell = nil
-			hsBalanceArcaneEntryLockUntil = 0
-			hsBalanceArcaneFlushUntil = 0
-			hsBalancePreArcaneHoldUntil = 0
-			if type(HSBalanceClearQueueLock) == "function" then HSBalanceClearQueueLock() end
-			if type(HSBalanceResetDotLocks) == "function" then HSBalanceResetDotLocks() end
-			if type(HSBalanceResetOpenerState) == "function" then HSBalanceResetOpenerState() end
-		end
+		hsLastBalanceDecisionSpell = nil
+		hsLastBalanceDecisionPhase = nil
+		hsLastBalanceDecisionAt = 0
+		hsLastRotationLockUntil = 0
+		hsLastRotationLockSpell = nil
+		hsBalanceArcaneEntryLockUntil = 0
+		hsBalanceArcaneFlushUntil = 0
+		hsBalancePreArcaneHoldUntil = 0
+		HSBalanceClearQueueLock()
+		HSBalanceResetDotLocks()
+		HSBalanceResetOpenerState()
 		return nil
 	end
-
-	if type(SH_Moonkin_IsActive) == "function" and SH_Moonkin_IsActive() == true then
-		if type(SH_Moonkin_GetPredictedSpellName) == "function" then
-			return SH_Moonkin_GetPredictedSpellName()
-		end
-		if type(HS_GetBalancePredictedSpellName) == "function" then
-			return HS_GetBalancePredictedSpellName()
-		end
-		return nil
+	if HS_IsBalanceMode() == true then
+		return HS_GetBalancePredictedSpellName()
 	end
-
 	local formId = GetActiveForm()
+	local energy = UnitMana("player") or 0
+	local comboPoints = HSGetComboPoints()
+	local stealthed = HSBuffChk("Ability_Ambush")
 	if formId == 1 then
-		if type(SH_Bear_GetPredictedSpellName) == "function" then
-			return SH_Bear_GetPredictedSpellName()
+		if HSAutoFF == 1 and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and not IsSpellOnCD("Faerie Fire (Feral)") then
+			return "Faerie Fire (Feral)"
+		end
+		if ShiftyMode == "aoe" then
+			if energy >= 15 and not IsSpellOnCD("Swipe") then return "Swipe" end
+			if energy >= 10 and not IsSpellOnCD("Demoralizing Roar") then return "Demoralizing Roar" end
+			if energy >= 15 and not IsSpellOnCD("Maul") then return "Maul" end
+		else
+			if energy >= 20 and not IsSpellOnCD("Demoralizing Roar") and IsTDebuff('target', 'Ability_Druid_DemoralizingRoar') == false then return "Demoralizing Roar" end
+			if energy >= 15 and not IsSpellOnCD("Maul") then return "Maul" end
 		end
 		return nil
 	end
 
-	if UnitPowerType("player") == 3 then
-		if type(SH_Cat_GetPredictedSpellName) == "function" then
-			return SH_Cat_GetPredictedSpellName()
-		end
+	if UnitPowerType("player") ~= 3 then
 		return nil
+	end
+
+	if type(SH_Cat_GetPredictedSpellName) == "function" then
+		return SH_Cat_GetPredictedSpellName()
 	end
 
 	return nil
 end
+
 
 function HS_GetOverlayStore()
 	if ShiftyDebugLog == nil or type(ShiftyDebugLog) ~= "table" then
@@ -1398,31 +1400,10 @@ function SH_GetDisplaySecondSpell(nextSpell)
 
 	-- Cat lookahead
 	if UnitPowerType("player") == 3 then
-		local fbthresh = 5
-		if mode == "aoe" then fbthresh = 4 end
-
-		if nextSpell == "Rake" then
-			if cp + 1 >= fbthresh then
-				if mode ~= "aoe" then return "Rip" end
-				return "Ferocious Bite"
-			end
-			if BehindTarget ~= nil and BehindTarget() == true then return "Shred" end
-			return "Claw"
-		elseif nextSpell == "Shred" or nextSpell == "Claw" then
-			if cp + 1 >= fbthresh then
-				if mode ~= "aoe" then return "Rip" end
-				return "Ferocious Bite"
-			end
-			if nextSpell == "Shred" then return "Shred" end
-			return "Claw"
-		elseif nextSpell == "Rip" or nextSpell == "Ferocious Bite" then
-			return "Rake"
-		elseif nextSpell == "Faerie Fire (Feral)" then
-			if BehindTarget ~= nil and BehindTarget() == true then return "Shred" end
-			return "Claw"
-		elseif nextSpell == "Tiger's Fury" then
-			return "Rake"
+		if type(SH_Cat_GetSecondSpell) == "function" then
+			return SH_Cat_GetSecondSpell(nextSpell, mode, cp)
 		end
+		return nil
 	end
 
 	return nil
@@ -2818,26 +2799,27 @@ function ShiftyAddon()
 	end
 
 	if formId == 1 then
-		if type(SH_Bear_Run) == "function" then
-			SH_Bear_Run()
-			return
+		if HS_BearTryOOCShift() == true then return end
+		if ShiftyMode == "aoe" then
+			HSBearAOE()
+		else
+			HSBearSingle()
 		end
+		return
 	end
 
-	if type(SH_Moonkin_IsActive) == "function" and SH_Moonkin_IsActive() == true then
-		if type(SH_Moonkin_Run) == "function" then
-			if SH_Moonkin_Run() == true then
-				HS_UpdateOverlay(false)
-			end
-			return
+	if HS_IsBalanceMode() == true then
+		if HSBalanceCastRotation() == true then
+			HS_UpdateOverlay(false)
 		end
+		return
 	end
 
 	if UnitPowerType("Player") == 3 then
 		if type(SH_Cat_Run) == "function" then
 			SH_Cat_Run(tot, stealthed, romactive, romcooldown, partynum, lipcd, lipslot)
-			return
 		end
+		return
 	end
 
 	if UnitLevel('target') == -1 and UnitAffectingCombat('Player') and UnitInRaid('Player') then
@@ -2868,149 +2850,12 @@ function ShiftyAddon()
 end
 
 function Atk(CorS,stealthyn,romyn,romcd)
-	HS_EnsureSettings()
-	StAttack(1)
-	local comboPoints = HSGetComboPoints()
-	local canRake = not HSIsDebuffImmune("rake")
-	local canFF = not HSIsDebuffImmune("ff")
-	local canRip = not HSIsDebuffImmune("rip")
-	local ferocity = SpecCheck(2,1)
-	local idolofferocity = 0
-	local shth = 15
-	local rakeCost = 40 - ferocity
-	local impshred = SpecCheck(2,9)
-	local shredtext = "Spell_Shadow_VampiricAura"
-	local clawtext = "Ability_Druid_Rake"
-	local shredCost = 100 - (40 + impshred*6 + 20)
-	local clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
-	local builderSpell = "Claw"
-	local builderTexture = clawtext
-	local builderCost = clawCost
-	local builderSlot = 0
-	local kotscd,kotseq,kotsbag,kotsslot = ItemInfo('Kiss of the Spider')
-	local escd,eseq,esbag,esslot = ItemInfo('Earthstrike')
-	local zhmcd,zhmeq,zhmbag,zhmslot = ItemInfo('Zandalarian Hero Medallion')
-	local fbthresh = 5
-	if ShiftyMode == "aoe" then fbthresh = 4 end
-	if(romyn == true) then shth = 30 end
-
-	if GetInventoryItemLink('player',18) ~= nil then
-		if(string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity')) then
-			idolofferocity = 3
-			clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
-			builderCost = clawCost
-		end
-	end
-	if UnitLevel('target') == -1 then
-		PopSkeleton()
-		if HSMCPUse == 1 then Pummel() end
-		if UnitAffectingCombat('Player') and kotseq ~= -1 and kotscd == 0 and UnitName('target') ~= "Razorgore the Untamed" and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then UseItemByName("Kiss of the Spider") end
-		if UnitAffectingCombat('Player') and eseq ~= -1 and escd == 0 and UnitName('target') ~= "Razorgore the Untamed" and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then UseItemByName("Earthstrike") end
-		if UnitAffectingCombat('Player') and zhmeq ~= -1 and zhmcd == 0 and UnitName('target') ~= "Razorgore the Untamed" and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then UseItemByName("Zandalarian Hero Medallion") end
-	end
-	if BehindTarget() == true and UnitMana('Player') >= HS_SHRED_ENERGY_THRESHOLD and ShiftyMode ~= "aoe" then
-		builderSpell = "Shred"
-		builderTexture = shredtext
-		builderCost = shredCost
-	end
-	builderSlot = FindActionSlot(builderTexture)
-	if builderSpell == "Shred" and builderSlot == 0 then
-		builderSpell = "Claw"
-		builderTexture = clawtext
-		builderCost = clawCost
-		builderSlot = FindActionSlot(builderTexture)
-		HSDebugTrace("BUILDER_FALLBACK", "Shred slot missing; fallback to Claw")
-	end
-	HSDebugTrace("ATK_THRESHOLDS", "mode="..tostring(ShiftyMode).." CorS="..tostring(CorS).." builder="..builderSpell.." bcost="..tostring(builderCost).." fbthresh="..tostring(fbthresh).." shth="..tostring(shth))
-	if UnitIsDead('target') then doclaw = 0 HSDebugTrace("TARGET_DEAD", "") return end
-
-	if ShiftySettings.cat.useTiger == 1 and HSTigerUse == 1 and stealthyn == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and UnitMana('Player') >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
-		HSDebugTrace("CAST", "Tiger's Fury")
-		HSCast("Tiger's Fury(Rank 4)")
-		return
-	end
-
-	if ShiftySettings.cat.useRake == 1 and stealthyn == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or UnitMana('Player') >= rakeCost) then
-		HSDebugTrace("CAST", "Rake (missing)")
-		HSCast("Rake")
-		return
-	end
-
-	if HSAutoFF == 1 and stealthyn == false and UnitExists("target") and CheckInteractDistance('target',3) == 1 and canFF and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and comboPoints <= HS_FF_REFRESH_MAX_CP then
-		HSDebugTrace("CAST", "Faerie Fire (missing close)")
-		HSCast("Faerie Fire (Feral)(Rank 4)")
-		return
-	end
-
-	if CheckInteractDistance('target',3) ~= 1 and MobTooFar() == false then
-		if UnitExists("target") and HSAutoFF == 1 and canFF and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthyn == false and (not IsSpellOnCD("Faerie Fire (Feral)")) then
-			HSDebugTrace("CAST", "Faerie Fire (out of range)")
-			HSCast("Faerie Fire (Feral)(Rank 4)")
-		end
-	end
-
-	if(comboPoints<fbthresh) then
-		HSDebugTrace("BUILDER_PHASE", "comboPoints<fbthresh")
-		if UnitMana('Player')>=builderCost or HSBuffChk("Spell_Shadow_ManaBurn") == true then
-			if builderSlot ~= 0 and IsUse(builderSlot) == 1 then
-				if not IsSpellOnCD(builderSpell) then
-					if builderSpell == "Shred" and BehindTarget() ~= true then
-						HSDebugTrace("BUILDER_GUARD", "Shred blocked by behind check; fallback to Claw")
-						builderSpell = "Claw"
-						builderTexture = clawtext
-						builderCost = clawCost
-						builderSlot = FindActionSlot(builderTexture)
-					end
-					if builderSlot == 0 or IsUse(builderSlot) ~= 1 then HSDebugTrace("BUILDER_UNAVAILABLE", builderSpell.." fallback unusable") return end
-					HSDebugTrace("CAST", builderSpell.." (builder)")
-					HSCast(builderSpell)
-				end
-			elseif builderSlot == 0 then
-				HSDebugTrace("BUILDER_UNAVAILABLE", builderSpell.." action slot not found")
-			end
-		else
-			HSDebugTrace("LOW_ENERGY", "builder mana low; attempting FF/shift")
-			if UnitAffectingCombat('Player') and UnitExists("target") then
-				if ShiftySettings.cat.useShift == 1 and CanShift() == true then
-					if HSTryShift("builder low energy") == true then return end
-				end
-				if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthyn == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
-					HSDebugTrace("CAST", "Faerie Fire (energy gap)")
-					HSCast("Faerie Fire (Feral)(Rank 4)")
-				end
-			end
-		end
-	else
-		HSDebugTrace("FINISHER_PHASE", "comboPoints>=fbthresh")
-		local finisherEnergy = shth
-		local shouldRip = comboPoints == 5 and HasRip() == false and canRip and ShiftyMode ~= "aoe"
-		if shouldRip then finisherEnergy = 30 end
-		if UnitMana('Player')>=finisherEnergy or HSBuffChk("Spell_Shadow_ManaBurn") == true then
-			if shouldRip then
-				if not IsSpellOnCD("Rip") then
-					HSDebugTrace("CAST", "Rip (opener @5cp)")
-					HSCast("Rip")
-				end
-			else
-				if IsUse(FindActionSlot("Ability_Druid_FerociousBite")) == 1 then
-					if not IsSpellOnCD("Ferocious Bite") then
-						HSDebugTrace("CAST", "Ferocious Bite")
-						HSCast("Ferocious Bite")
-					end
-				end
-			end
-		else
-			HSDebugTrace("LOW_ENERGY", "finisher mana low; attempting FF/shift")
-			if UnitAffectingCombat('Player') and UnitExists("target") then
-				if ShiftySettings.cat.useShift == 1 and CanShift() == true then
-					if HSTryShift("finisher low energy") == true then return end
-				end
-				if comboPoints <= HS_FF_REFRESH_MAX_CP and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and stealthyn == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and HSAutoFF == 1 and canFF then
-					HSDebugTrace("CAST", "Faerie Fire (finisher energy gap)")
-					HSCast("Faerie Fire (Feral)(Rank 4)")
-				end
-			end
-		end
+	-- Legacy compatibility shim. Live Cat rotation ownership now lives in ShiftyCat.lua.
+	local tot = UnitName("targettarget")
+	local partynum = GetNumPartyMembers()
+	local lipcd, _, _, lipslot = ItemInfo('Limited Invulnerability Potion')
+	if type(SH_Cat_Run) == "function" then
+		SH_Cat_Run(tot, stealthyn, romyn, romcd, partynum, lipcd, lipslot)
 	end
 end
 

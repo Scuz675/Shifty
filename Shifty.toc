@@ -1,16 +1,8 @@
 ## Interface: 11200
 ## Title: Shifty
-## Notes: Druid rotation and buff helper for Turtle WoW /shifty
-## Author: Custom Build
-## Version: 2.0.0
-## SavedVariables: ShiftyDebugLog,ShiftySettings,ShiftyRestockSettings,ShiftyBuffSettings
+## Notes: Druid rotation and buff helper for Turtle WoW
+## Author: Skazz of Tel'Abim
+## Version: 1.0.1-safe-cat-split
+## SavedVariables: ShiftyMode,ShiftyOverlayEnabled,ShiftyOverlayScale,ShiftyDebugEnabled,ShiftyDebugLog,ShiftySettings,HSAutoFF,HSBearUseDemo,HSBearUseMaul,HSBearUseSavageBite,HSBearUseOOCShift,HSTigerUse,HSShiftUse,HSCowerUse,HSClawAdd,ShiftyRestockSettings,ShiftyBuffSettings
 
-Localization.lua
-ShiftyUtils.lua
-ShiftyCore.lua
-ShiftyBear.lua
-ShiftyCat.lua
-ShiftyMoonkin.lua
-ShiftyBuff.lua
-ShiftyRestock.lua
 Shifty.xml
