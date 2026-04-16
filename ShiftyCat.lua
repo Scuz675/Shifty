@@ -1,5 +1,5 @@
 -- Shifty Cat module
--- Cat-only single target and AOE rotation ownership lives here.
+-- V2.2.0 - clean isolated Cat ownership with optimised AOE pooling.
 
 function SH_Cat_GetPredictedSpellName()
 	HS_EnsureSettings()
@@ -14,15 +14,17 @@ function SH_Cat_GetPredictedSpellName()
 			if CheckInteractDistance('target',3) == 1 and not IsSpellOnCD("Ravage") then return "Ravage" end
 		end
 
+		-- Use Tiger's Fury later so we get better value from the energy swing.
 		if ShiftySettings.cat.useTiger == 1 and HSTigerUse == 1
 			and stealthed == false
 			and HSBuffChk('Ability_Mount_JungleTiger') == false
 			and not IsSpellOnCD("Tiger's Fury")
-			and energy <= 40
-			and comboPoints < 4 then
+			and energy <= 25
+			and comboPoints <= 3 then
 			return "Tiger's Fury"
 		end
 
+		-- Keep Faerie Fire up early when it is cheap to fit in.
 		if HSAutoFF == 1
 			and stealthed == false
 			and UnitExists("target")
@@ -34,13 +36,19 @@ function SH_Cat_GetPredictedSpellName()
 			return "Faerie Fire (Feral)"
 		end
 
-		if comboPoints >= 4 and energy >= 35 then
-			if IsUse(FindActionSlot("Ability_Druid_FerociousBite")) == 1 and not IsSpellOnCD("Ferocious Bite") then
+		-- Pool more energy before Bite so the finisher hits harder.
+		if IsUse(FindActionSlot("Ability_Druid_FerociousBite")) == 1 and not IsSpellOnCD("Ferocious Bite") then
+			if comboPoints >= 5 and energy >= 55 then
+				return "Ferocious Bite"
+			end
+			-- Safety dump if we are close to capping and already have a 4cp finisher ready.
+			if comboPoints >= 4 and energy >= 85 then
 				return "Ferocious Bite"
 			end
 		end
 
-		if energy >= 45 or HSBuffChk("Spell_Shadow_ManaBurn") == true then
+		-- Main AOE builder.
+		if energy >= 40 or HSBuffChk("Spell_Shadow_ManaBurn") == true then
 			if not IsSpellOnCD("Claw") then return "Claw" end
 		end
 
