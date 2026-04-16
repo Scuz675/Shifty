@@ -98,6 +98,9 @@ if ShiftyBuffSettings.useMark == nil then ShiftyBuffSettings.useMark = 1 end
 if ShiftyBuffSettings.useThorns == nil then ShiftyBuffSettings.useThorns = 1 end
 
 function HS_EnsureSettings()
+	if ShiftyMode ~= "aoe" then ShiftyMode = "single" end
+	HSMode = ShiftyMode
+	HSDebugTrace("MODE_SYNC", "startup HSMode=" .. tostring(HSMode) .. " ShiftyMode=" .. tostring(ShiftyMode))
 	if type(ShiftySettings) ~= "table" then ShiftySettings = {} end
 	if type(ShiftySettings.cat) ~= "table" then ShiftySettings.cat = {} end
 	if type(ShiftySettings.bear) ~= "table" then ShiftySettings.bear = {} end
@@ -1170,12 +1173,15 @@ function HS_GetPredictedSpellName()
 		return nil
 	end
 	if HS_IsBalanceMode() == true then
+		HSDebugTrace("MOONKIN_ENTRY", "dispatch from ShiftyAddon")
 		return HS_GetBalancePredictedSpellName()
 	end
 	local formId = GetActiveForm()
 	local energy = UnitMana("player") or 0
 	local comboPoints = HSGetComboPoints()
 	local stealthed = HSBuffChk("Ability_Ambush")
+	HSDebugTrace("ROUTE", "formId=" .. tostring(formId) .. " powerType=" .. tostring(UnitPowerType("Player")) .. " balance=" .. tostring(HS_IsBalanceMode() == true))
+
 	if formId == 1 then
 		if HSAutoFF == 1 and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and not IsSpellOnCD("Faerie Fire (Feral)") then
 			return "Faerie Fire (Feral)"
@@ -1213,7 +1219,7 @@ function HS_GetPredictedSpellName()
 	local builderCost = clawCost
 	local fbthresh = 5
 	if ShiftyMode == "aoe" then fbthresh = 4 end
-	if GetInventoryItemLink('player',18) ~= nil and string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity') then
+	if HS_PlayerHasIdolOfFerocity() == true then
 		idolofferocity = 3
 		clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
 		builderCost = clawCost
@@ -1431,8 +1437,6 @@ function SH_GetDisplaySecondSpell(nextSpell)
 				return "Starfire"
 			end
 			return "Wrath"
-		elseif nextSpell == "Hurricane" then
-			return "Hurricane"
 		end
 		return nil
 	end
@@ -1484,9 +1488,66 @@ function SH_GetDisplaySecondSpell(nextSpell)
 end
 
 
+
+hsPlayerIdolCacheValue = hsPlayerIdolCacheValue or nil
+hsPlayerIdolCacheAt = hsPlayerIdolCacheAt or 0
+
+function HS_InvalidateEquipmentCache()
+	hsPlayerIdolCacheValue = nil
+	hsPlayerIdolCacheAt = 0
+end
+
+function HS_PlayerHasIdolOfFerocity()
+	local now = 0
+	if type(GetTime) == "function" then now = GetTime() or 0 end
+	if hsPlayerIdolCacheValue ~= nil and hsPlayerIdolCacheAt ~= nil and (now - hsPlayerIdolCacheAt) < 1.0 then
+		return hsPlayerIdolCacheValue == 1
+	end
+	local hasIdol = 0
+	local idolLink = GetInventoryItemLink("player", 18)
+	if idolLink ~= nil and string.find(idolLink, "Idol of Ferocity") then
+		hasIdol = 1
+	end
+	hsPlayerIdolCacheValue = hasIdol
+	hsPlayerIdolCacheAt = now
+	return hasIdol == 1
+end
+
+function HS_ShouldSuspendOverlayUpdates()
+	if HS_ShouldShowOverlayForCurrentForm() ~= true then return true end
+	if CharacterFrame ~= nil and CharacterFrame:IsVisible() then return true end
+	if UnitExists("target") ~= 1 and UnitAffectingCombat("player") ~= true then return true end
+	return false
+end
+
+function HS_ShouldPromptHurricane()
+	if tostring(HSMode or ShiftyMode or "single") ~= "aoe" then return false end
+	if type(HS_IsBalanceMode) == "function" and HS_IsBalanceMode() ~= true then return false end
+	if UnitExists("target") ~= 1 or UnitIsDead("target") then return false end
+	if UnitCanAttack("player", "target") ~= 1 then return false end
+	if type(HSBalanceCanCast) ~= "function" or HSBalanceCanCast("Hurricane") ~= true then return false end
+	hsHurricanePromptLastAt = hsHurricanePromptLastAt or 0
+	local now = GetTime() or 0
+	if (now - hsHurricanePromptLastAt) < 0.75 then return false end
+	hsHurricanePromptLastAt = now
+	return true
+end
+
+function HS_ShouldShowOverlayForCurrentForm()
+	local formId = 0
+	if type(GetActiveForm) == "function" then
+		formId = GetActiveForm() or 0
+	end
+	if formId == 1 then return true end
+	if type(HS_IsBalanceMode) == "function" and HS_IsBalanceMode() == true then return true end
+	if type(UnitPowerType) == "function" and UnitPowerType("player") == 3 then return true end
+	return false
+end
+
 function HS_UpdateOverlay(forceHide)
 	if hsOverlayFrame == nil then return end
-	if forceHide == true or ShiftyOverlayEnabled ~= 1 then
+	if forceHide == true or ShiftyOverlayEnabled ~= 1 or HS_ShouldSuspendOverlayUpdates() == true then
+		hsOverlayFrame:EnableMouse(false)
 		hsOverlayFrame:Hide()
 		return
 	end
@@ -1518,6 +1579,11 @@ function HS_UpdateOverlay(forceHide)
 		if cooldownRemaining > 0 then
 			cooldownSpell = currentSpell
 		end
+	end
+	if cooldownSpell == nil and HS_ShouldPromptHurricane() == true then
+		if type(HSDebugTrace) == "function" then HSDebugTrace("HURRICANE_PROMPT", "cooldown slot prompt active") end
+		cooldownSpell = "Hurricane"
+		cooldownRemaining = 0
 	end
 
 	HS_OverlaySetIcon(hsOverlayFrame.currentIcon, currentSpell)
@@ -1643,6 +1709,13 @@ function HS_CreateOverlay()
 	hsOverlayFrame = f
 	HS_RestoreOverlayPosition()
 	f:SetScript("OnUpdate", function()
+		if HS_ShouldSuspendOverlayUpdates() == true then
+			if hsOverlayFrame ~= nil then
+				hsOverlayFrame:EnableMouse(false)
+				hsOverlayFrame:Hide()
+			end
+			return
+		end
 		hsOverlayElapsed = hsOverlayElapsed + arg1
 		if hsOverlayElapsed >= 0.15 then
 			hsOverlayElapsed = 0
@@ -2107,6 +2180,7 @@ function Shifty_OnLoad()
 		this:RegisterEvent("UI_ERROR_MESSAGE")
 		this:RegisterEvent("PLAYER_TARGET_CHANGED")
 		this:RegisterEvent("MERCHANT_SHOW")
+		this:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
     end
 
 	SlashCmdList["SHIFTY"] = Shifty_SlashCommand;
@@ -2120,10 +2194,14 @@ function Shifty_SlashCommand(msg)
 
 	if command == "single" then
 		ShiftyMode = "single"
+		HSMode = "single"
+		HSDebugTrace("MODE_SET", "command=/shifty single HSMode=" .. tostring(HSMode) .. " ShiftyMode=" .. tostring(ShiftyMode))
 		ShiftyAddon()
 		return
 	elseif command == "aoe" then
 		ShiftyMode = "aoe"
+		HSMode = "aoe"
+		HSDebugTrace("MODE_SET", "command=/shifty aoe HSMode=" .. tostring(HSMode) .. " ShiftyMode=" .. tostring(ShiftyMode))
 		ShiftyAddon()
 		return
 	elseif command == "debug" then
@@ -2246,12 +2324,19 @@ end
 
 function Shifty_OnEvent(event)
 	if event == "PLAYER_ENTERING_WORLD" then
+		HS_InvalidateEquipmentCache()
 		if ShiftyOverlayEnabled == 1 then
 			HS_CreateOverlay()
 			HS_UpdateOverlay(false)
 		end
 		SH_CreateMinimapButton()
 	end
+	if event == "PLAYER_EQUIPMENT_CHANGED" then
+		HS_InvalidateEquipmentCache()
+		HSDebugTrace("EQUIP_CACHE_RESET", "")
+		HS_UpdateOverlay(false)
+	end
+
 	if event == "PLAYER_TARGET_CHANGED" then
 		doclaw = 0
 		HSResetDebuffImmunity(HSGetTargetKey())
@@ -2535,6 +2620,31 @@ function HSGetComboPoints()
 	return cp
 end
 
+
+function HS_GetCurrentModeTag()
+	local mode = tostring(HSMode or ShiftyMode or "single")
+	if mode ~= "aoe" then mode = "single" end
+	return string.upper(mode)
+end
+
+function HS_GetCurrentRoleTag()
+	if type(GetActiveForm) == "function" then
+		local formId = GetActiveForm() or 0
+		if formId == 1 then return "BEAR" end
+	end
+	if type(HS_IsBalanceMode) == "function" and HS_IsBalanceMode() == true then
+		return "MOONKIN"
+	end
+	if type(UnitPowerType) == "function" and UnitPowerType("Player") == 3 then
+		return "CAT"
+	end
+	return "CASTER"
+end
+
+function HS_GetCurrentRoleModeTag()
+	return HS_GetCurrentRoleTag() .. "_" .. HS_GetCurrentModeTag()
+end
+
 function HSDebugTrace(tag, detail)
 	if ShiftyDebugEnabled ~= 1 then return end
 	if ShiftyDebugLog == nil then ShiftyDebugLog = {} end
@@ -2550,7 +2660,8 @@ function HSDebugTrace(tag, detail)
 	local rake = 0
 	if HasRake ~= nil and HasRake() == true then rake = 1 end
 	local ts = date("%H:%M:%S")
-	local line = "["..ts.."] "..tag.." E="..energy.." CP="..cp.." B="..behind.." Rip="..rip.." Rake="..rake.." doclaw="..tostring(doclaw).." T="..target
+	local roleMode = HS_GetCurrentRoleModeTag()
+	local line = "["..ts.."] "..roleMode.." "..tag.." E="..energy.." CP="..cp.." B="..behind.." Rip="..rip.." Rake="..rake.." doclaw="..tostring(doclaw).." T="..target
 	if detail ~= nil and detail ~= "" then line = line.." | "..detail end
 	table.insert(ShiftyDebugLog, line)
 	while table.getn(ShiftyDebugLog) > HS_DEBUG_LOG_MAX do
@@ -2873,6 +2984,8 @@ function ShiftyAddon()
 	end
 
 	if formId == 1 then
+		HSDebugTrace("BEAR_ENTRY", "dispatch from ShiftyAddon")
+		HSDebugTrace("BEAR_DISPATCH_ONLY", "core delegates to SH_Bear_Run")
 		if HS_BearTryOOCShift() == true then return end
 		if ShiftyMode == "aoe" then
 			HSBearAOE()
@@ -2890,6 +3003,7 @@ function ShiftyAddon()
 	end
 
 	if UnitPowerType("Player") == 3 then
+		HSDebugTrace("CAT_ENTRY", "dispatch from ShiftyAddon")
 		if stealthed == true then
 			if HSBuffChk('Ability_Mount_JungleTiger') == false then
 				HSCast("Tiger's Fury(Rank 4)")
@@ -2955,12 +3069,6 @@ function ShiftyAddon()
 end
 
 function Atk(CorS,stealthyn,romyn,romcd)
-	if UnitPowerType("Player") == 3 and type(SH_Cat_ExecuteRotation) == "function" then
-		if type(HSDebugTrace) == "function" then
-			HSDebugTrace("ATK_SHIM", "forwarding Cat execution to SH_Cat_ExecuteRotation")
-		end
-		return SH_Cat_ExecuteRotation(CorS,stealthyn,romyn,romcd)
-	end
 	HS_EnsureSettings()
 	StAttack(1)
 	local comboPoints = HSGetComboPoints()
@@ -2987,12 +3095,10 @@ function Atk(CorS,stealthyn,romyn,romcd)
 	if ShiftyMode == "aoe" then fbthresh = 4 end
 	if(romyn == true) then shth = 30 end
 
-	if GetInventoryItemLink('player',18) ~= nil then
-		if(string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity')) then
-			idolofferocity = 3
-			clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
-			builderCost = clawCost
-		end
+	if HS_PlayerHasIdolOfFerocity() == true then
+		idolofferocity = 3
+		clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
+		builderCost = clawCost
 	end
 	if UnitLevel('target') == -1 then
 		PopSkeleton()

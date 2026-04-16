@@ -546,10 +546,19 @@ function HS_GetBalancePredictedSpellName()
 	HSBalanceSetProcReason(nil)
 
 	if HSMode == "aoe" then
-		if HSBalanceCanCast("Hurricane") and canCastOnTarget then
-			predicted = "Hurricane"
+		if type(HSDebugTrace) == "function" then HSDebugTrace("MOONKIN_AOE_DECISION", "prompt hurricane separately; live aoe cast excludes hurricane") end
+		if HSBalanceCanCast("Insect Swarm") and not HSBalanceTargetHasSpellDebuff("Insect Swarm") and canCastOnTarget then
+			predicted = "Insect Swarm"
+		elseif HSBalanceCanCast("Moonfire") and not HSBalanceTargetHasSpellDebuff("Moonfire") and canCastOnTarget then
+			predicted = "Moonfire"
+		elseif HSBalanceArcaneActive() and HSBalanceCanCast("Starfire") and canCastOnTarget then
+			predicted = "Starfire"
+		elseif HSBalanceNatureActive() and HSBalanceCanCast("Wrath") and canCastOnTarget then
+			predicted = "Wrath"
 		elseif HSBalanceCanCast("Wrath") and canCastOnTarget then
 			predicted = "Wrath"
+		elseif HSBalanceCanCast("Starfire") and canCastOnTarget then
+			predicted = "Starfire"
 		end
 		if predicted ~= nil then
 			HSBalanceRememberPrediction(predicted)
@@ -697,6 +706,7 @@ function SH_Moonkin_ResetState()
 end
 
 function SH_Moonkin_Run()
+	HSDebugTrace("MOONKIN_RUN", "mode=" .. tostring(HSMode or ShiftyMode) .. " phase=" .. tostring((HS_BALANCE_STATE and HS_BALANCE_STATE.phase) or ""))
 	return HSBalanceCastRotation()
 end
 

@@ -2,9 +2,7 @@
 ## Title: Shifty
 ## Notes: Druid rotation and buff helper for Turtle WoW
 ## Author: Skazz of Tel'Abin
-## Version: 2.2.0
+## Version: 2.4.9
 ## SavedVariables: ShiftyMode,ShiftyOverlayEnabled,ShiftyOverlayScale,ShiftyDebugEnabled,ShiftyDebugLog,ShiftySettings,HSAutoFF,HSBearUseDemo,HSBearUseMaul,HSBearUseSavageBite,HSBearUseOOCShift,HSTigerUse,HSShiftUse,HSCowerUse,HSClawAdd,ShiftyRestockSettings,ShiftyBuffSettings
 
 Shifty.xml
-ShiftyRestock.lua
-ShiftyBuff.lua

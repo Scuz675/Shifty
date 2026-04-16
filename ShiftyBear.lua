@@ -12,7 +12,12 @@ if hsBearLastPredictedSavageBiteAt == nil then hsBearLastPredictedSavageBiteAt =
 
 local function HS_BearCanSuggestMaul(rage)
 	local now = GetTime()
-	if rage < 15 then return false end
+	local mode = tostring(HSMode or ShiftyMode or "single")
+	local minRage = 40
+	if mode == "aoe" then
+		minRage = 35
+	end
+	if rage < minRage then return false end
 	if IsSpellOnCD("Maul") then return false end
 	if (now - (hsBearLastPredictedMaulAt or 0)) < 1.20 then return false end
 	hsBearLastPredictedMaulAt = now
@@ -42,9 +47,14 @@ end
 
 local function HS_BearCanSuggestSavageBite(rage)
 	local now = GetTime()
+	local mode = tostring(HSMode or ShiftyMode or "single")
+	local minRage = 55
+	if mode == "aoe" then
+		minRage = 60
+	end
 	if HSBearUseSavageBite ~= 1 then return false end
 	if type(ShiftySettings) == "table" and type(ShiftySettings.bear) == "table" and ShiftySettings.bear.useSavageBite ~= 1 then return false end
-	if rage < 40 then return false end
+	if rage < minRage then return false end
 	if IsSpellOnCD("Savage Bite") then return false end
 	if (now - (hsBearLastPredictedSavageBiteAt or 0)) < 1.20 then return false end
 	hsBearLastPredictedSavageBiteAt = now
@@ -54,17 +64,18 @@ end
 function SH_Bear_GetPredictedSpellName()
 	local rage = UnitMana("player") or 0
 	HS_EnsureSettings()
+	HSDebugTrace("BEAR_PREDICT", "mode=" .. tostring(HSMode or ShiftyMode) .. " rage=" .. tostring(rage))
 
 	if HS_BearCanSuggestFF() then
 		return "Faerie Fire (Feral)"
 	end
 
 	if HSMode == "aoe" then
-		if ShiftySettings.bear.useSwipe == 1 and rage >= 15 and not IsSpellOnCD("Swipe") then
-			return "Swipe"
-		end
 		if HS_BearCanSuggestDemo(rage) then
 			return "Demoralizing Roar"
+		end
+		if ShiftySettings.bear.useSwipe == 1 and rage >= 15 and not IsSpellOnCD("Swipe") then
+			return "Swipe"
 		end
 		if HS_BearCanSuggestSavageBite(rage) then
 			return "Savage Bite"
@@ -88,5 +99,18 @@ function SH_Bear_GetPredictedSpellName()
 end
 
 function SH_Bear_Run()
-	if HSMode == "aoe" then HSBearAOE() else HSBearSingle() end
+	HSDebugTrace("BEAR_RUN", "mode=" .. tostring(HSMode or ShiftyMode))
+	SH_Bear_ExecuteRotation()
+end
+
+function SH_Bear_ExecuteRotation()
+	local spellName = SH_Bear_GetPredictedSpellName()
+	if spellName == nil or spellName == "" then
+		if type(HSDebugTrace) == "function" then HSDebugTrace("BEAR_IDLE", "no predicted spell") end
+		return
+	end
+	if type(HSDebugTrace) == "function" then
+		HSDebugTrace("BEAR_EXEC", tostring(spellName) .. " via SH_Bear_ExecuteRotation")
+	end
+	HSCast(spellName)
 end
