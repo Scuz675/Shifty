@@ -1,15 +1,16 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<Ui xmlns="http://www.blizzard.com/wow/ui/"  
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 xsi:schemaLocation="http://www.blizzard.com/wow/ui/ C:\Projects\WoW\Bin\Interface\FrameXML\UI.xsd">
+  <!-- $Id$ -->
+  
+  <!-- Localization -->
   <Script file="Localization.lua"/>
-  <Script file="ShiftyUtils.lua"/>
+  
+  <!-- My Script -->
   <Script file="ShiftyCore.lua"/>
   <Script file="ShiftyBear.lua"/>
-  <Script file="ShiftyCat.lua"/>
-  <Script file="ShiftyMoonkin.lua"/>
-  <Script file="ShiftyBuff.lua"/>
-  <Script file="ShiftyRestock.lua"/>
 
+  <!-- My AddOn Frames -->
   <Frame name="ShiftyFrame" parent="UIParent">
     <Scripts>
       <OnLoad>

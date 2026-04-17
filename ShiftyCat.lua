@@ -1,9 +1,7 @@
 -- Shifty Cat module
--- Cat-only single target and AOE rotation ownership lives here.
 
 function SH_Cat_GetPredictedSpellName()
 	HS_EnsureSettings()
-	HSDebugTrace("CAT_PREDICT", "mode=" .. tostring(HSMode or ShiftyMode))
 	local energy = UnitMana("player") or 0
 	local comboPoints = HSGetComboPoints()
 	local stealthed = HSBuffChk("Ability_Ambush")
@@ -27,7 +25,7 @@ function SH_Cat_GetPredictedSpellName()
 	local targetIsBoss = UnitLevel('target') == -1
 	local fbthresh = 5
 	if HSMode == "aoe" then fbthresh = 4 end
-	if HS_PlayerHasIdolOfFerocity() == true then
+	if GetInventoryItemLink('player',18) ~= nil and string.find(GetInventoryItemLink('player',18), 'Idol of Ferocity') then
 		idolofferocity = 3
 		clawCost = 100 - (55 + ferocity + 20 + idolofferocity)
 		builderCost = clawCost
@@ -40,7 +38,7 @@ function SH_Cat_GetPredictedSpellName()
 	if ShiftySettings.cat.useTiger == 1 and HSTigerUse == 1 and stealthed == false and HSBuffChk('Ability_Mount_JungleTiger') == false and (not IsSpellOnCD("Tiger's Fury")) and energy >= 30 and comboPoints < 4 and (CheckInteractDistance('target',3) == 1 or MobTooFar() == true) then
 		return "Tiger's Fury"
 	end
-	if HSMode ~= "aoe" and (type(ShiftySettings) ~= "table" or type(ShiftySettings.cat) ~= "table" or ShiftySettings.cat.useRake == 1) and stealthed == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or energy >= rakeCost) then
+	if (type(ShiftySettings) ~= "table" or type(ShiftySettings.cat) ~= "table" or ShiftySettings.cat.useRake == 1) and stealthed == false and CheckInteractDistance('target',3) == 1 and comboPoints < fbthresh and canRake and IsTDebuff('target', 'Ability_Druid_Disembowel') == false and IsUse(FindActionSlot("Ability_Druid_Rake")) == 1 and (not IsSpellOnCD("Rake")) and (HSBuffChk("Spell_Shadow_ManaBurn") == true or energy >= rakeCost) then
 		return "Rake"
 	end
 	if HSAutoFF == 1 and stealthed == false and UnitExists("target") and CheckInteractDistance('target',3) == 1 and canFF and IsTDebuff('target', 'Spell_Nature_FaerieFire') == false and (not IsSpellOnCD("Faerie Fire (Feral)")) and comboPoints <= HS_FF_REFRESH_MAX_CP then
@@ -71,7 +69,6 @@ function SH_Cat_GetPredictedSpellName()
 end
 
 function SH_Cat_Run(tot, stealthed, romactive, romcooldown, partynum, lipcd, lipslot)
-	HSDebugTrace("CAT_RUN", "mode=" .. tostring(HSMode or ShiftyMode) .. " tot=" .. tostring(tot))
 	if stealthed == true then
 		if ShiftySettings.cat.useTiger == 1 and HSBuffChk('Ability_Mount_JungleTiger') == false then
 			HSCast("Tiger's Fury(Rank 4)")
